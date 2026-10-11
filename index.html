@@ -80,34 +80,29 @@ iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--line);border
       <button class="btn ghost" id="logout">Lock</button></div>
     <nav id="tabs">
       <button data-t="plants" class="on">Plants</button>
-      <button data-t="reports">Reports</button>
-      <button data-t="consumption">Consumption</button>
+      <button data-t="td">Target vs Dry</button>
       <button data-t="pour">Pour Tracker</button>
-      <button data-t="manpower">Manpower</button>
       <button data-t="ice">Ice</button>
       <button data-t="maintenance">Maintenance</button>
+      <button data-t="manpower">Manpower</button>
     </nav>
   </header>
   <main>
     <section id="t-plants"></section>
-    <section id="t-reports" class="hidden"></section>
-    <section id="t-consumption" class="hidden"></section>
+    <section id="t-td" class="hidden"></section>
     <section id="t-pour" class="hidden"><iframe data-src="https://hadaad11.github.io/pourtracker-/" title="Pour Tracker"></iframe></section>
     <section id="t-manpower" class="hidden"><iframe data-src="https://hadaad11.github.io/manpower/" title="Manpower"></iframe></section>
     <section id="t-ice" class="hidden"><iframe data-src="ice/" title="Ice Calculator"></iframe></section>
-    <section id="t-maintenance" class="hidden">
-      <div class="tools"><a class="btn" href="https://docs.google.com/spreadsheets/d/1xrmjnlPOJG7SzjT9lYIkJhaIDJEGFDENoPuQJgxvy30/edit?gid=134919722#gid=134919722" target="_blank" rel="noopener" style="text-decoration:none">Open in Google Sheets ↗</a>
-        <span class="note">Opens only for Google accounts the sheet is shared with.</span></div>
-      <iframe data-src="https://docs.google.com/spreadsheets/d/1xrmjnlPOJG7SzjT9lYIkJhaIDJEGFDENoPuQJgxvy30/preview?gid=134919722" title="Maintenance"></iframe>
-    </section>
+    <section id="t-maintenance" class="hidden"><div class="card" id="maint"></div></section>
   </main>
 </div>
 
+<script src="maint.js"></script>
 <script>
 'use strict';
 // ?local=1 reads data.enc next to the page (testing on the server PC).
 const DATA_URL = new URLSearchParams(location.search).has('local') ? 'data.enc'
-  : 'https://raw.githubusercontent.com/hadaad11/ncm-hub/data/data.enc';
+  : 'https://raw.githubusercontent.com/hadaad11/ncm-hub/refs/heads/data/data.enc';
 const KEY = 'ncm-hub-pw';
 let D = null, PW = null;
 
@@ -158,6 +153,7 @@ $('#tabs').addEventListener('click', e => {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + b.dataset.t));
   const f = document.querySelector('#t-' + b.dataset.t + ' iframe');
   if (f && !f.src) f.src = f.dataset.src;
+  if (b.dataset.t === 'maintenance' && !$('#maint').dataset.done) { $('#maint').dataset.done = '1'; ncmMaint($('#maint')); }
   store('ncm-hub-tab', b.dataset.t);
 });
 
@@ -170,7 +166,7 @@ const label = id => (D.plants.find(p => p.id === id) || {label: id}).label;
 
 function render() {
   $('#updated').textContent = 'Updated ' + age(D.generated);
-  renderPlants(); renderReports(); renderConsumption();
+  renderPlants(); renderTD();
 }
 
 function kpiTotals(period) {
@@ -211,54 +207,33 @@ function renderPlants() {
 }
 const card = (v, l) => '<div class="card"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
 
-function renderReports() {
-  const sec = $('#t-reports');
-  if (!sec.dataset.ready) {
-    const opts = Object.entries(D.reports).filter(([k]) => k !== 'gunluk')
-      .map(([k, r]) => '<option value="' + k + '">' + esc(r.title) + (r.period === 'today' ? ' (today)' : ' (this month)') + '</option>').join('');
-    sec.innerHTML = '<div class="tools"><select id="rk">' + opts + '</select><select id="rp"></select><input id="rq" type="search" placeholder="Search…"></div><div class="note" id="rn"></div><div class="tw" id="rt"></div>';
-    sec.dataset.ready = '1';
-    ['rk', 'rp'].forEach(id => $('#' + id).onchange = drawReport);
-    $('#rq').oninput = drawReport;
-  }
-  $('#rp').innerHTML = '<option value="">All plants</option>' + D.plants.map(p => '<option value="' + esc(p.id) + '">' + esc(p.label) + '</option>').join('');
-  drawReport();
+// Target (theory) vs Dry real consumption, all plants or one plant, this month.
+let tdPlant = '';
+function renderTD() {
+  const sec = $('#t-td');
+  const byPlant = D.consumption_by_plant || {};
+  const src = tdPlant ? byPlant[tdPlant] : D.consumption;
+  if (!D.consumption || !D.consumption.totals) { sec.innerHTML = '<p class="note">No consumption data.</p>'; return; }
+  const t = (src || {}).totals || {};
+  const pct = v => '<span class="' + (v < 0 ? 'neg' : '') + '">' + fmt(v, 2) + ' %</span>';
+  let h = '<div class="tools">' + ['', ...Object.keys(byPlant)].map(p =>
+    '<button class="btn' + (p === tdPlant ? '' : ' ghost') + '" data-tdp="' + esc(p) + '">' + (p ? esc(p) : 'All plants') + '</button>').join('') + '</div>';
+  h += '<p class="note">' + esc(D.month) + ' · ' + fmt(t.m3, 1) + ' m³ produced</p>';
+  h += '<div class="grid">' + card(fmt(t.teori), 'Target (theory) kg') + card(fmt(t.kuru), 'Dry real kg') +
+    card('<span class="' + (t.fark < 0 ? 'neg' : '') + '">' + fmt(t.fark) + '</span>', 'Difference kg') + card(pct(t.yuzde), 'Difference') + '</div>';
+  h += tdTable('Materials', ['Material', 'Group'], ['Malzeme', 'Grup'], (src || {}).materials);
+  h += tdTable('Mixes', ['Formula', 'Product', 'm³'], ['Formul', 'Urun', 'M3'], (src || {}).mixes);
+  sec.innerHTML = h;
+  sec.querySelectorAll('[data-tdp]').forEach(b => b.onclick = () => { tdPlant = b.dataset.tdp; renderTD(); });
 }
-
-function drawReport() {
-  const r = D.reports[$('#rk').value]; if (!r) return;
-  const pid = $('#rp').value, q = $('#rq').value.trim().toLowerCase();
-  const multi = !pid;
-  let rows = [];
-  for (const [id, rs] of Object.entries(r.rows)) if (!pid || id === pid) for (const x of rs) rows.push(multi ? [label(id), ...x] : x);
-  if (q) rows = rows.filter(x => x.join(' ').toLowerCase().includes(q));
-  const cols = multi ? ['Plant', ...r.columns] : r.columns;
-  const numIdx = new Set(r.numeric.map(i => i + (multi ? 1 : 0)));
-  const sums = cols.map((_, i) => numIdx.has(i) ? rows.reduce((a, x) => a + (num(x[i]) || 0), 0) : null);
-  let h = '<table><tr>' + cols.map((c, i) => '<th' + (numIdx.has(i) ? ' class="num"' : '') + '>' + esc(c) + '</th>').join('') + '</tr>';
-  h += rows.map(x => '<tr>' + cols.map((_, i) => '<td' + (numIdx.has(i) ? ' class="num' + ((num(x[i]) || 0) < 0 ? ' neg' : '') + '">' + fmt(x[i], Number.isInteger(num(x[i])) ? 0 : 2) : '>' + esc(x[i])) + '</td>').join('') + '</tr>').join('');
-  const showSum = rows.length > 1 && !/%|Avg|W\/C|Slump|Dmax/.test(cols.join());
-  if (showSum) h += '<tfoot><tr>' + sums.map((s, i) => '<td' + (s !== null ? ' class="num">' + fmt(s, 2) : '>' + (i === 0 ? 'Total' : '')) + '</td>').join('') + '</tr></tfoot>';
-  $('#rt').innerHTML = h + '</table>';
-  $('#rn').textContent = rows.length + ' rows · ' + (r.period === 'today' ? 'today' : 'month ' + D.month);
-}
-
-function renderConsumption() {
-  const c = D.consumption || {}, t = c.totals || {};
-  let h = '';
-  if (!c.totals) { $('#t-consumption').innerHTML = '<p class="note">No consumption data.</p>'; return; }
-  h += '<div class="grid">' + card(fmt(t.teori), 'Theory kg') + card(fmt(t.kuru), 'Dry real kg') +
-    card('<span class="' + (t.fark < 0 ? 'neg' : '') + '">' + fmt(t.fark) + '</span>', 'Difference kg') +
-    card('<span class="' + (t.yuzde < 0 ? 'neg' : '') + '">' + esc(t.yuzde) + ' %</span>', 'Difference') + '</div>';
-  h += table('Materials (' + esc(D.month) + ')', c.materials);
-  h += table('Mixes (' + esc(D.month) + ')', c.mixes);
-  $('#t-consumption').innerHTML = h;
-}
-function table(title, rows) {
+function tdTable(title, heads, keys, rows) {
   if (!rows || !rows.length) return '';
-  const cols = Object.keys(rows[0]);
-  return '<h2>' + title + '</h2><div class="tw"><table><tr>' + cols.map(c => '<th' + (typeof rows[0][c] === 'number' ? ' class="num"' : '') + '>' + esc(c) + '</th>').join('') + '</tr>' +
-    rows.map(r => '<tr>' + cols.map(c => typeof r[c] === 'number' ? '<td class="num' + (r[c] < 0 ? ' neg' : '') + '">' + fmt(r[c], Number.isInteger(r[c]) ? 0 : 2) + '</td>' : '<td>' + esc(r[c]) + '</td>').join('') + '</tr>').join('') + '</table></div>';
+  const n = (v, d = 0) => '<td class="num' + (v < 0 ? ' neg' : '') + '">' + fmt(v, d) + '</td>';
+  return '<h2>' + title + '</h2><div class="tw"><table><tr>' +
+    heads.map((x, i) => '<th' + (keys[i] === 'M3' ? ' class="num"' : '') + '>' + x + '</th>').join('') +
+    '<th class="num">Target kg</th><th class="num">Dry real kg</th><th class="num">Diff kg</th><th class="num">Diff %</th></tr>' +
+    rows.map(r => '<tr>' + keys.map(k => k === 'M3' ? n(r[k], 1) : '<td>' + esc(r[k]) + '</td>').join('') +
+      n(r.Teori) + n(r.Kuru) + n(r.Fark) + n(r.Yuzde, 2) + '</tr>').join('') + '</table></div>';
 }
 
 // restore last tab + saved password
