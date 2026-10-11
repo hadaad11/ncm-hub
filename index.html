@@ -24,6 +24,14 @@ button,select,input{font:inherit;color:inherit}
 #err{color:var(--bad);font-size:13px;min-height:18px;margin-top:10px}
 /* app */
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+/* NCM brand bar - same as the Manpower page: white, logo left, green rule */
+.topbar{background:#fff;border-bottom:3px solid #34a853;padding:10px 16px}
+.topbar .tb{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1200px;margin:0 auto}
+.topbar img{height:40px;width:auto;display:block}
+.topbar span{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7785}
+@media (max-width:600px){.topbar img{height:32px}.topbar span{display:none}}
+.lock-logo{background:#fff;border-radius:12px;padding:12px;margin:-6px -4px 18px;border-bottom:3px solid #34a853;text-align:center}
+.lock-logo img{height:48px;max-width:100%}
 .hd{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1200px;margin:0 auto}
 .hd b{font-size:17px}
 .hd .sp{flex:1}
@@ -76,6 +84,7 @@ th.srt:hover{color:var(--acc)}
 
 <div id="lock">
   <form id="lockForm">
+    <div class="lock-logo"><img src="ncm-logo.png" alt="NCM, Nuclear Concrete Mixes"></div>
     <h1>NCM Hub</h1>
     <p>Enter the hub password to view the data.</p>
     <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
@@ -87,6 +96,7 @@ th.srt:hover{color:var(--acc)}
 
 <div id="app" class="hidden">
   <header>
+    <div class="topbar"><div class="tb"><img src="ncm-logo.png" alt="NCM, Nuclear Concrete Mixes"><span>Plants Dashboard</span></div></div>
     <div class="hd"><b>NCM Hub</b><small id="updated"></small><span class="sp"></span>
       <button class="btn ghost" id="reload" title="Reload data">↻</button>
       <button class="btn ghost" id="logout">Lock</button></div>
