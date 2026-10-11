@@ -65,6 +65,8 @@ th.srt:hover{color:var(--acc)}
 .fl{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
 .fl input{padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--txt)}
 .tools .btn{padding:7px 13px;font-size:13px}
+.share{display:inline-block;width:48px;height:6px;border-radius:3px;background:var(--soft);margin-right:6px;vertical-align:middle;overflow:hidden}
+.share i{display:block;height:100%;background:var(--bar)}
 .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
 .links a:hover{border-color:var(--acc)}
@@ -185,37 +187,73 @@ function kpiTotals(period) {
   return t;
 }
 
+/* Date-range bar shared by Plants and Consumption: From / To + Today, This month, Last month.
+   onChange(from, to) is called with YYYY-MM-DD strings. */
+function rangeBar(prefix, F, onChange) {
+  const min = D.from || (D.consumption || {}).from || '', max = localDay();
+  const h = '<div class="tools"><label class="fl">From <input type="date" id="' + prefix + 'From" min="' + min + '" max="' + max + '" value="' + F.from + '"></label>' +
+    '<label class="fl">To <input type="date" id="' + prefix + 'To" min="' + min + '" max="' + max + '" value="' + F.to + '"></label>' +
+    ['today', 'month', 'last'].map(k => '<button class="btn ghost" data-' + prefix + 'rng="' + k + '">' + {today: 'Today', month: 'This month', last: 'Last month'}[k] + '</button>').join('') + '</div>';
+  const wire = root => {
+    root.querySelector('#' + prefix + 'From').onchange = e => onChange(e.target.value, F.to);
+    root.querySelector('#' + prefix + 'To').onchange = e => onChange(F.from, e.target.value);
+    root.querySelectorAll('[data-' + prefix + 'rng]').forEach(b => b.onclick = () => {
+      const t = localDay(), k = b.getAttribute('data-' + prefix + 'rng');
+      if (k === 'today') return onChange(t, t);
+      if (k === 'month') return onChange(t.slice(0, 8) + '01', t);
+      const last = localDay(new Date(+t.slice(0, 4), +t.slice(5, 7) - 1, 0));
+      onChange(last.slice(0, 8) + '01', last);
+    });
+  };
+  return {html: h, wire};
+}
+
+let PF = {from: '', to: ''};
 function renderPlants() {
-  const td = kpiTotals('today'), mo = kpiTotals('month');
+  const today = localDay();
+  if (!PF.from) { PF.from = today.slice(0, 8) + '01'; PF.to = today; }
+  const td = kpiTotals('today');
+  // per plant and per day production inside the chosen range (daily report, all plants)
+  const f = PF.from, t = PF.to, per = {}, days = {};
+  for (const [pid, rows] of Object.entries((D.reports.gunluk || {}).rows || {}))
+    for (const r of rows) {
+      if (r[0] < f || r[0] > t) continue;
+      const m3 = num(r[1]) || 0, n = num(r[2]) || 0;
+      per[pid] = per[pid] || {m3: 0, n: 0}; per[pid].m3 += m3; per[pid].n += n;
+      days[r[0]] = (days[r[0]] || 0) + m3;
+    }
+  const tot = Object.values(per).reduce((a, x) => ({m3: a.m3 + x.m3, n: a.n + x.n}), {m3: 0, n: 0});
+  const label = f === t ? f : f + ' → ' + t;
   const stale = (Date.now() - new Date(D.generated)) > 30 * 60000;
   let h = '';
   if (stale) h += '<div class="warn">This data is more than 30 minutes old. The server PC may be off or offline.</div>';
   if (D.down && D.down.length) h += '<div class="warn">Not reachable right now: ' + esc(D.down.join(', ')) + '</div>';
+  const rb = rangeBar('p', PF, (a, b) => { PF = {from: a, to: b}; renderPlants(); });
+  h += rb.html;
   h += '<div class="grid">' +
-    card(fmt(td.m3, 1), 'Today m³') + card(fmt(td.del), 'Today deliveries') +
-    card(fmt(mo.m3, 1), 'Month m³ (' + esc(D.month) + ')') + card(fmt(mo.del), 'Month deliveries') + '</div>';
-  h += '<h2>Plants <span class="hint">· tap a plant to see its consumption</span></h2><div class="tw"><table><tr><th>Plant</th><th></th><th class="num">Today m³</th><th class="num">Deliveries</th><th class="num">Customers</th><th class="num">Month m³</th><th>Last</th></tr>';
+    card(fmt(tot.m3, 1), 'm³ · ' + esc(label)) + card(fmt(tot.n), 'Deliveries · ' + esc(label)) +
+    card(fmt(td.m3, 1), 'Today m³ (live)') + card(fmt(td.del), 'Today deliveries (live)') + '</div>';
+  h += '<h2>Plants <span class="hint">· tap a plant to see its consumption</span></h2><div class="tw"><table><tr><th>Plant</th><th></th>' +
+    '<th class="num">m³</th><th class="num">Deliveries</th><th class="num">Share</th><th class="num">Today m³</th><th>Last today</th></tr>';
   for (const p of D.plants) {
-    const t = D.kpi.today[p.id], m = D.kpi.month[p.id], up = !!t;
+    const k = D.kpi.today[p.id], r = per[p.id] || {m3: 0, n: 0}, up = !!k;
+    const share = tot.m3 ? r.m3 * 100 / tot.m3 : 0;
     h += '<tr class="clk" data-goplant="' + esc(p.label) + '"><td><b>' + esc(p.label) + '</b></td><td class="' + (up ? 'up">online' : 'down">offline') + '</td>' +
-      '<td class="num">' + (t ? fmt(t[1], 1) : '-') + '</td><td class="num">' + (t ? fmt(t[0]) : '-') + '</td>' +
-      '<td class="num">' + (t ? fmt(t[3]) : '-') + '</td><td class="num">' + (m ? fmt(m[1], 1) : '-') + '</td>' +
-      '<td>' + esc(t ? t[5] : '-') + '</td></tr>';
+      '<td class="num">' + fmt(r.m3, 1) + '</td><td class="num">' + fmt(r.n) + '</td>' +
+      '<td class="num"><span class="share"><i style="width:' + share.toFixed(1) + '%"></i></span>' + fmt(share, 0) + '%</td>' +
+      '<td class="num">' + (k ? fmt(k[1], 1) : '-') + '</td><td>' + esc(k ? k[5] : '-') + '</td></tr>';
   }
-  h += '</table></div>';
-  // daily production, all plants summed
-  const days = {};
-  for (const rows of Object.values((D.reports.gunluk || {}).rows || {}))
-    for (const r of rows) days[r[0]] = (days[r[0]] || 0) + (num(r[1]) || 0);
+  h += '<tfoot><tr><td>Total</td><td></td><td class="num">' + fmt(tot.m3, 1) + '</td><td class="num">' + fmt(tot.n) + '</td><td></td><td class="num">' + fmt(td.m3, 1) + '</td><td></td></tr></tfoot></table></div>';
   const keys = Object.keys(days).sort(), max = Math.max(1, ...Object.values(days));
-  if (keys.length) {
-    h += '<h2>Daily production this month (m³) <span class="hint">· tap a day to see its consumption</span></h2><div class="bars">' + keys.map(k =>
+  if (keys.length > 1) {
+    h += '<h2>Daily production (m³) <span class="hint">· tap a day to see its consumption</span></h2><div class="bars">' + keys.map(k =>
       '<div class="bar clk" data-goday="' + esc(k) + '" title="' + esc(k) + ': ' + fmt(days[k], 1) + ' m³"><em>' + fmt(days[k], 0) + '</em><i style="height:' + (days[k] / max * 85).toFixed(1) + '%"></i><span>' + esc(k.slice(8)) + '</span></div>').join('') + '</div>';
   }
   if (D.problems && D.problems.length) h += '<h2>Problems</h2><div class="tw"><table>' + D.problems.map(p => '<tr><td>' + esc(p) + '</td></tr>').join('') + '</table></div>';
   const sec = $('#t-plants');
   sec.innerHTML = h;
-  sec.querySelectorAll('[data-goplant]').forEach(r => r.onclick = () => goConsumption({plant: r.dataset.goplant}));
+  rb.wire(sec);
+  sec.querySelectorAll('[data-goplant]').forEach(r => r.onclick = () => goConsumption({plant: r.dataset.goplant, from: PF.from, to: PF.to}));
   sec.querySelectorAll('[data-goday]').forEach(b => b.onclick = () => goConsumption({from: b.dataset.goday, to: b.dataset.goday}));
 }
 // YYYY-MM-DD in the viewer's local time (toISOString would give the UTC day).
