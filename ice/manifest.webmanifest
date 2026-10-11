@@ -1,0 +1,16 @@
+{
+  "name": "NCM Ice Calculator",
+  "short_name": "Ice Calc",
+  "description": "Ice blocks to order for a pour, and how much concrete your ice carries.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E9EEF3",
+  "theme_color": "#1B6FA8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

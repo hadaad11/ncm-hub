@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NCM — Ice Calculator</title>
+<meta name="theme-color" content="#1B6FA8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{
+  --bg:#E9EEF3; --surface:#fff; --ink:#0F1E2B; --body:#33475B; --muted:#8296A8;
+  --line:#EAF0F5; --track:#E4EBF1; --accent:#1B6FA8; --accent-l:#3494D2;
+  --accent-d:#155A88; --dark:#102A3E; --dark2:#1B3D56; --darkmuted:#7FA5C1;
+  --green:#3FBE84; --greenh:#DFF5E9; --red:#E2634F; --redh:#FCE4E0;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--body);
+  font:400 15px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+  padding:0 0 env(safe-area-inset-bottom);
+}
+.wrap{max-width:940px;margin:0 auto;padding:14px 14px 20px}
+h1{font-size:20px;font-weight:600;color:var(--ink);margin:4px 2px 9px}
+
+/* tabs ------------------------------------------------------------------ */
+.tabs{display:flex;background:#DCE4EC;border-radius:12px;padding:3px;gap:3px;margin-bottom:12px}
+.tab{
+  flex:1;border:0;background:transparent;border-radius:10px;padding:10px 6px;
+  font:400 13px "Segoe UI",system-ui,sans-serif;color:var(--muted);cursor:pointer;
+}
+.tab.on{background:var(--surface);color:var(--accent);font-weight:600;
+  box-shadow:0 1px 3px rgba(16,42,62,.10)}
+
+/* layout ---------------------------------------------------------------- */
+.page{display:none}
+.page.on{display:block}
+.cols{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+@media(min-width:860px){.cols{grid-template-columns:52fr 48fr}}
+
+.card{background:var(--surface);border-radius:var(--r);padding:6px 18px}
+.card.pad{padding:14px 18px}
+.cap{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--muted);
+  text-transform:uppercase}
+
+/* rows ------------------------------------------------------------------ */
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .lb{flex:1;font-size:15px;color:var(--body)}
+.row .un{width:58px;font-size:12px;color:var(--muted)}
+input{
+  font:600 17px "Segoe UI",system-ui,sans-serif;color:var(--accent);
+  background:var(--surface);border:0;border-bottom:2px solid transparent;
+  text-align:right;width:82px;padding:2px 2px 3px;outline:none;border-radius:0;
+}
+input:focus{border-bottom-color:var(--accent-l);background:#F4F9FD}
+input.nm{font:400 15px "Segoe UI",system-ui,sans-serif;color:var(--body);
+  text-align:left;width:100%;flex:1}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* factories -------------------------------------------------------------- */
+.fhead{display:flex;align-items:center;padding:12px 0 6px}
+.fhead .tot{margin-left:auto;font-weight:600;color:var(--ink);font-size:14px}
+.frow{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+.frow:last-of-type{border-bottom:0}
+.frow .nm{flex:1;min-width:0}
+.frow .t{font-size:12px;color:var(--muted);width:52px;text-align:right}
+.frow input.pc{width:52px}
+.frow .pct{font-size:12px;color:var(--muted)}
+.bar{width:58px;height:7px;border-radius:4px;background:var(--track);overflow:hidden;flex:none}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--accent-l);transition:width .18s}
+.light{width:18px;height:18px;border-radius:50%;border:0;padding:0;flex:none;cursor:pointer;
+  display:grid;place-items:center;background:var(--greenh)}
+.light::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--green)}
+.light.off{background:var(--redh)}
+.light.off::after{background:var(--red)}
+
+/* strip of small settings ------------------------------------------------ */
+.mini{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:6px 14px;padding:12px 4px}
+.mini span{font-size:12px;color:var(--muted)}
+.mini input{font-size:13px;width:62px;text-align:center}
+.mini .div{width:1px;height:16px;background:var(--line)}
+
+/* button ------------------------------------------------------------------ */
+.go{
+  width:100%;border:0;border-radius:14px;background:var(--accent);color:#fff;
+  font:600 14px/1 "Segoe UI",system-ui,sans-serif;letter-spacing:3px;
+  padding:16px 0;cursor:pointer;
+}
+.go:hover{background:var(--accent-l)}
+.go:active{background:var(--accent-d)}
+
+/* answer ------------------------------------------------------------------ */
+.ans{background:var(--dark);border-radius:var(--r);padding:16px 18px;color:#fff;
+  text-align:center;margin-top:12px}
+.ans .cap{color:var(--darkmuted)}
+.big{display:flex;align-items:flex-end;justify-content:center;gap:9px;margin:5px 0 0}
+.big b{font:200 44px/1 "Segoe UI Light","Segoe UI",system-ui,sans-serif}
+.big s{text-decoration:none;font-size:15px;padding-bottom:6px}
+.sub{color:var(--darkmuted);font-size:13px;margin:5px 0 12px}
+.ans hr{border:0;border-top:1px solid var(--dark2);margin:0}
+.stats{display:flex;flex-direction:column;gap:0}
+.stats div{display:flex;align-items:center;padding:7px 0 0}
+.stats div span{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--darkmuted)}
+.stats div b{margin-left:auto;font-weight:600;font-size:14px}
+.ok{color:var(--green)!important}
+.bad{color:var(--red)!important}
+
+/* hour table -------------------------------------------------------------- */
+.hours{margin-top:12px;padding:14px 18px}
+.tbox{max-height:min(46vh,420px);overflow:auto;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--surface);color:var(--muted);
+  font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+  padding:6px 4px;border-bottom:1px solid var(--line);text-align:center}
+td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--line)}
+tr.out td{background:var(--redh);color:#A3392A;font-weight:600}
+tr.done td{background:var(--greenh);color:#1F7A50;font-weight:600}
+.foot{text-align:center;color:var(--muted);font-size:11px;padding:14px 4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ice Calculator</h1>
+  <div class="tabs">
+    <button class="tab on" data-tab="0">Ice Calculator</button>
+    <button class="tab" data-tab="1">Pour Capacity</button>
+  </div>
+
+  <!-- ================= tab 1 : blocks to order ================= -->
+  <section class="page on" id="p0">
+    <div class="cols">
+      <div>
+        <div class="card">
+          <div class="row"><div class="lb">Pour quantity</div>
+            <input id="qty0" inputmode="decimal"><div class="un">m³</div></div>
+          <div class="row"><div class="lb">Rate</div>
+            <input id="rate0" inputmode="decimal"><div class="un">m³ / hour</div></div>
+          <div class="row"><div class="lb">Ice percentage</div>
+            <input id="pct0" inputmode="decimal"><div class="un">%</div></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="fhead"><span class="cap">Ice factories</span>
+            <span class="tot" id="tot0"></span></div>
+          <div id="fac0"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px;padding:0 18px">
+          <div class="mini">
+            <span>Full tank</span><input id="tank0" inputmode="decimal"><span>kg</span>
+            <i class="div"></i>
+            <span>Each factory</span><input id="each0" inputmode="decimal"><span>kg/h</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button class="go" onclick="calcBlocks()">C A L C U L A T E</button>
+        <div class="ans">
+          <div class="cap" id="cap0">You need to order</div>
+          <div class="big"><b id="big0">—</b><s id="unit0">ice blocks</s></div>
+          <div class="sub" id="sub0"></div>
+          <hr>
+          <div class="stats">
+            <div><span>The pour needs</span><b id="s-need">—</b></div>
+            <div><span>On hand</span><b id="s-have">—</b></div>
+            <div><span>Made while pouring</span><b id="s-made">—</b></div>
+            <div><span>Missing</span><b id="s-gap">—</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= tab 2 : pour capacity ================= -->
+  <section class="page" id="p1">
+    <div class="cols">
+      <div>
+        <div class="card">
+          <div class="row"><div class="lb">Pour quantity</div>
+            <input id="qty1" inputmode="decimal"><div class="un">m³</div></div>
+          <div class="row"><div class="lb">Rate</div>
+            <input id="rate1" inputmode="decimal"><div class="un">m³ / hour</div></div>
+          <div class="row"><div class="lb">Ice percentage</div>
+            <input id="pct1" inputmode="decimal"><div class="un">%</div></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="fhead"><span class="cap">Ice factories</span>
+            <span class="tot" id="run1"></span></div>
+          <div id="fac1"></div>
+          <div class="row" style="border-top:1px solid var(--line)">
+            <div class="lb">Ice blocks on site</div>
+            <input id="blocks" inputmode="decimal">
+            <div class="un" id="blockst"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;padding:0 18px">
+          <div class="mini">
+            <span>Full tank</span><input id="tank1" inputmode="decimal"><span>kg</span>
+            <i class="div"></i>
+            <span>Each factory</span><input id="each1" inputmode="decimal"><span>kg/h</span>
+            <i class="div"></i>
+            <span>Start</span><input id="start" style="width:64px">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button class="go" onclick="calcPour()">C A L C U L A T E</button>
+        <div class="ans">
+          <div class="cap" id="cap1">Your resources carry</div>
+          <div class="big"><b id="big1">—</b><s id="unit1">m³</s></div>
+          <div class="sub" id="sub1"></div>
+          <hr>
+          <div class="stats">
+            <div><span>Ice stock</span><b id="p-stock">—</b></div>
+            <div><span>Used / hour</span><b id="p-used">—</b></div>
+            <div><span>Made / hour</span><b id="p-made">—</b></div>
+            <div><span>Net / hour</span><b id="p-net">—</b></div>
+          </div>
+        </div>
+
+        <div class="card hours">
+          <span class="cap">Hour by hour</span>
+          <div class="tbox">
+            <table>
+              <thead><tr><th>Time</th><th>Ice stock (ton)</th><th>Quantity (m³)</th></tr></thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">NCM · ice = 165 kg water per m³ · one block = 18 kg</div>
+</div>
+
+<script>
+/* the two numbers the boxes never ask for */
+const WATER = 165, BLOCK = 18;
+
+const DEF = {
+  qty: 1750, rate: 54, pct: 70, tank: 16000,
+  each: 700, blocks: 2300, start: '10:00',
+  fac: [
+    {name:'Liebherr 1', pct:35, on:true},
+    {name:'Liebherr 2', pct:50, on:true},
+    {name:'Vurmak 3',   pct:45, on:true},
+    {name:'Vurmak 4',   pct:45, on:true},
+    {name:'Vurmak 5',   pct:60, on:true}
+  ]
+};
+
+let S = load();
+
+function load(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('ncm-ice') || '{}');
+    const s = JSON.parse(JSON.stringify(DEF));
+    for(const k of ['qty','rate','pct','tank','each','blocks','start'])
+      if(raw[k] !== undefined) s[k] = raw[k];
+    if(Array.isArray(raw.fac))
+      raw.fac.slice(0,5).forEach((f,i)=>{
+        if(f && typeof f === 'object')
+          s.fac[i] = {name:f.name ?? s.fac[i].name,
+                      pct:f.pct ?? s.fac[i].pct,
+                      on:f.on !== undefined ? !!f.on : true};
+      });
+    return s;
+  }catch(e){ return JSON.parse(JSON.stringify(DEF)); }
+}
+function save(){ try{ localStorage.setItem('ncm-ice', JSON.stringify(S)); }catch(e){} }
+
+const $ = id => document.getElementById(id);
+const num = v => { const n = parseFloat(String(v).replace(/,/g,'').replace('%',''));
+                   return isFinite(n) ? n : 0; };
+const fmt = (n,d=0) => n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ---- build the two factory lists ------------------------------------- */
+function buildFactories(){
+  ['fac0','fac1'].forEach((host,tab)=>{
+    const box = $(host);
+    box.innerHTML = '';
+    S.fac.forEach((f,i)=>{
+      const row = document.createElement('div');
+      row.className = 'frow';
+      row.innerHTML =
+        `<button class="light${f.on?'':' off'}" data-i="${i}" title="running / down"></button>` +
+        `<input class="nm" value="${f.name.replace(/"/g,'&quot;')}" data-i="${i}" data-k="name">` +
+        `<span class="t" data-t="${i}"></span>` +
+        `<span class="bar"><i data-b="${i}"></i></span>` +
+        `<input class="pc" inputmode="decimal" value="${f.pct}" data-i="${i}" data-k="pct">` +
+        `<span class="pct">%</span>`;
+      box.appendChild(row);
+    });
+    box.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input',()=>{
+        const i = +inp.dataset.i;
+        if(inp.dataset.k === 'name') S.fac[i].name = inp.value;
+        else S.fac[i].pct = num(inp.value);
+        syncFactories(inp); echo(); save();
+      });
+      inp.addEventListener('keydown', enterHop);
+    });
+    box.querySelectorAll('.light').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const i = +b.dataset.i;
+        S.fac[i].on = !S.fac[i].on;
+        echo(); save();
+      });
+    });
+  });
+}
+
+/* keep the same factory line on both tabs showing the same thing */
+function syncFactories(except){
+  ['fac0','fac1'].forEach(host=>{
+    $(host).querySelectorAll('input').forEach(inp=>{
+      if(inp === except) return;
+      const i = +inp.dataset.i;
+      const v = inp.dataset.k === 'name' ? S.fac[i].name : S.fac[i].pct;
+      if(inp.value !== String(v)) inp.value = v;
+    });
+  });
+}
+
+/* ---- shared boxes ------------------------------------------------------ */
+const PAIRS = [
+  ['qty', ['qty0','qty1']], ['rate', ['rate0','rate1']],
+  ['pct', ['pct0','pct1']], ['tank', ['tank0','tank1']],
+  ['each', ['each0','each1']],
+  ['blocks', ['blocks']], ['start', ['start']]
+];
+
+function bind(){
+  PAIRS.forEach(([key, ids])=>{
+    ids.forEach(id=>{
+      const el = $(id);
+      el.value = S[key];
+      el.addEventListener('input',()=>{
+        S[key] = key === 'start' ? el.value : num(el.value);
+        ids.forEach(o=>{ if(o !== id && $(o).value !== String(S[key])) $(o).value = S[key]; });
+        echo(); save();
+      });
+      el.addEventListener('keydown', enterHop);
+    });
+  });
+}
+
+/* Enter drops to the next box on the same tab, and calculates on the last */
+function enterHop(ev){
+  if(ev.key !== 'Enter') return;
+  ev.preventDefault();
+  const page = ev.target.closest('.page');
+  const boxes = [...page.querySelectorAll('input')];
+  const i = boxes.indexOf(ev.target);
+  if(i > -1 && i < boxes.length - 1){ boxes[i+1].focus(); boxes[i+1].select(); }
+  else (page.id === 'p0' ? calcBlocks : calcPour)();
+}
+
+/* ---- live echoes ------------------------------------------------------- */
+const tankKg = () => S.fac.reduce((a,f)=> a + S.tank * f.pct/100, 0);
+const blocksKg = () => S.blocks * BLOCK;
+const running = () => S.fac.filter(f=>f.on).length;
+
+function echo(){
+  S.fac.forEach((f,i)=>{
+    const t = fmt(S.tank * f.pct/100/1000, 1) + ' t';
+    document.querySelectorAll(`[data-t="${i}"]`).forEach(e=> e.textContent = t);
+    document.querySelectorAll(`[data-b="${i}"]`).forEach(e=>
+      e.style.width = Math.max(0, Math.min(100, f.pct)) + '%');
+  });
+  // the lights are drawn from the model, so they can never drift out of step
+  S.fac.forEach((f,i)=>{
+    document.querySelectorAll(`.light[data-i="${i}"]`)
+            .forEach(e => e.classList.toggle('off', !f.on));
+  });
+  $('tot0').textContent = running() + ' running · ' + fmt(tankKg()/1000,1) + ' ton on hand';
+  $('run1').textContent = running() + ' running · ' + fmt(running()*S.each) + ' kg/h';
+  $('blockst').textContent = fmt(blocksKg()/1000,1) + ' t';
+}
+
+/* ---- tab 1 : how many blocks to order ---------------------------------- */
+function calcBlocks(){
+  echo();
+  const icePerM3 = S.pct/100 * WATER;
+  if(S.rate <= 0){
+    $('cap0').textContent = 'Rate cannot be zero';
+    $('big0').textContent = '—'; $('big0').className = 'bad';
+    $('unit0').textContent = ''; $('sub0').textContent = 'Type how many m³ go out every hour.';
+    ['s-need','s-have','s-made','s-gap'].forEach(i=> $(i).textContent = '—');
+    return;
+  }
+  const need = icePerM3 * S.qty;
+  const hours = S.qty / S.rate;
+  const made = running() * S.each * hours;
+  const stock = tankKg();
+  const gap = need - stock - made;
+  const blocks = gap > 0 ? Math.ceil(gap / BLOCK) : 0;
+
+  if(blocks > 0){
+    $('cap0').textContent = 'You need to order';
+    $('big0').textContent = fmt(blocks); $('big0').className = '';
+    $('unit0').textContent = blocks === 1 ? 'ice block' : 'ice blocks';
+    $('unit0').className = '';
+    $('sub0').textContent = fmt(gap/1000,1) + ' ton';
+  }else{
+    $('cap0').textContent = 'Nothing to order';
+    $('big0').textContent = '0'; $('big0').className = 'ok';
+    $('unit0').textContent = 'ice blocks'; $('unit0').className = 'ok';
+    $('sub0').textContent = 'covered · ' + fmt(-gap/1000,1) + ' ton to spare';
+  }
+  $('s-need').textContent = fmt(need/1000,1) + ' t';
+  $('s-have').textContent = fmt(stock/1000,1) + ' t';
+  $('s-made').textContent = fmt(made/1000,1) + ' t';
+  $('s-gap').textContent  = fmt(Math.max(0,gap)/1000,1) + ' t';
+}
+
+/* ---- tab 2 : how much concrete the resources carry --------------------- */
+function clockAt(base, h){
+  const m = base.h*60 + base.m + Math.floor(h*60);
+  const hh = Math.floor(m/60) % 24, mm = m % 60;
+  return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+}
+function parseClock(t){
+  const m = /^(\d{1,2})[:.]?(\d{2})?/.exec(String(t).trim());
+  if(!m) return {h:10,m:0};
+  return {h:Math.min(23,+m[1]), m:Math.min(59,+(m[2]||0))};
+}
+
+function calcPour(){
+  echo();
+  const tb = $('tbody'); tb.innerHTML = '';
+  const icePerM3 = S.pct/100 * WATER;
+
+  if(S.rate <= 0){
+    $('cap1').textContent = 'Rate cannot be zero';
+    $('big1').textContent = '—'; $('big1').className = 'bad';
+    $('unit1').textContent = ''; $('sub1').textContent = 'Type how many m³ go out every hour.';
+    ['p-stock','p-used','p-made','p-net'].forEach(i=> $(i).textContent = '—');
+    return;
+  }
+  const stock = tankKg() + blocksKg();
+  const made = running() * S.each;
+  const used = icePerM3 * S.rate;
+  const net = used - made;
+
+  $('p-stock').textContent = fmt(stock/1000,1) + ' t';
+  $('p-used').textContent  = fmt(used) + ' kg';
+  $('p-made').textContent  = fmt(made) + ' kg';
+  $('p-net').textContent   = fmt(net) + ' kg';
+
+  const base = parseClock(S.start);
+  $('cap1').textContent = 'Your resources carry';
+  if(net <= 0){
+    $('big1').textContent = 'no limit'; $('big1').className = 'ok';
+    $('unit1').textContent = ''; $('unit1').className = 'ok';
+    $('sub1').textContent = 'the running factories make as much as the pour burns';
+  }else{
+    const hours = stock / net, maxM3 = hours * S.rate, enough = maxM3 >= S.qty;
+    $('big1').textContent = fmt(maxM3); $('big1').className = enough ? 'ok' : '';
+    $('unit1').textContent = 'm³'; $('unit1').className = enough ? 'ok' : '';
+    $('sub1').textContent = fmt(hours,1) + ' hours · ice runs out at ' + clockAt(base,hours)
+      + (enough ? '' : ' · ' + fmt(S.qty - maxM3) + ' m³ short of the pour');
+  }
+
+  let left = stock, done = 0;
+  for(let h = 1; h <= 96; h++){
+    const poured = Math.min(S.rate, Math.max(0, S.qty - done));
+    left = left + made - poured * icePerM3;
+    done += poured;
+    const tr = document.createElement('tr');
+    if(left < 0) tr.className = 'out';
+    else if(done >= S.qty - 1e-9) tr.className = 'done';
+    tr.innerHTML = `<td>${clockAt(base,h)}</td><td>${fmt(left/1000,1)}</td><td>${fmt(done)}</td>`;
+    tb.appendChild(tr);
+    if(left < 0 || done >= S.qty - 1e-9) break;
+  }
+}
+
+/* ---- tabs -------------------------------------------------------------- */
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=> x.classList.toggle('on', x === b));
+    const i = b.dataset.tab;
+    document.querySelectorAll('.page').forEach(p=> p.classList.toggle('on', p.id === 'p' + i));
+    window.scrollTo(0,0);
+  });
+});
+
+buildFactories(); bind(); echo(); calcBlocks(); calcPour();
+</script>
+</body>
+</html>

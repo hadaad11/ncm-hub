@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>NCM Hub</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--txt:#0f172a;--mut:#64748b;--line:#e5e9f0;--acc:#2457d6;--ok:#15803d;--bad:#c0352b;--bar:#2457d6;--soft:#eef2fb}
+@media (prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--txt:#e2e8f0;--mut:#94a3b8;--line:#334155;--acc:#7aa2ff;--bar:#5b85f0;--soft:#24314a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.hidden{display:none!important}
+/* lock screen */
+#lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+#lock form{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:340px}
+#lock h1{margin:0 0 4px;font-size:22px}
+#lock p{margin:0 0 18px;color:var(--mut);font-size:13px}
+#lock input[type=password]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+#lock label{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);margin:12px 0 16px}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line)}
+#err{color:var(--bad);font-size:13px;min-height:18px;margin-top:10px}
+/* app */
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1200px;margin:0 auto}
+.hd b{font-size:17px}
+.hd .sp{flex:1}
+.hd small{color:var(--mut);font-size:12px}
+nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px;max-width:1200px;margin:0 auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--mut);white-space:nowrap;font-weight:600}
+nav button.on{color:var(--acc);border-bottom-color:var(--acc)}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.v{font-size:22px;font-weight:650;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.l{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:22px 0 9px;font-weight:600}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--card)}
+td{padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tfoot td{font-weight:650;background:var(--soft)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.up{color:var(--ok);font-weight:600}.down{color:var(--bad);font-weight:600}.neg{color:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:160px;padding:12px 12px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+.bar{flex:1 0 22px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar i{display:block;width:100%;background:var(--bar);border-radius:4px 4px 0 0;min-height:2px}
+.bar span{font-size:10px;color:var(--mut);padding:4px 0 6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tools select,.tools input{padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.tools input{flex:1;min-width:160px}
+.note{color:var(--mut);font-size:12.5px;margin:6px 0 12px}
+.warn{background:#fef3c7;color:#92400e;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:14px}
+iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--line);border-radius:12px;background:#fff}
+.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
+.links a:hover{border-color:var(--acc)}
+</style>
+</head>
+<body>
+
+<div id="lock">
+  <form id="lockForm">
+    <h1>NCM Hub</h1>
+    <p>Enter the hub password to view the data.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
+    <label><input id="remember" type="checkbox" checked> Remember on this device</label>
+    <button class="btn" type="submit" id="go">Open</button>
+    <div id="err"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="hd"><b>NCM Hub</b><small id="updated"></small><span class="sp"></span>
+      <button class="btn ghost" id="reload" title="Reload data">↻</button>
+      <button class="btn ghost" id="logout">Lock</button></div>
+    <nav id="tabs">
+      <button data-t="plants" class="on">Plants</button>
+      <button data-t="reports">Reports</button>
+      <button data-t="consumption">Consumption</button>
+      <button data-t="pour">Pour Tracker</button>
+      <button data-t="manpower">Manpower</button>
+      <button data-t="ice">Ice</button>
+      <button data-t="maintenance">Maintenance</button>
+    </nav>
+  </header>
+  <main>
+    <section id="t-plants"></section>
+    <section id="t-reports" class="hidden"></section>
+    <section id="t-consumption" class="hidden"></section>
+    <section id="t-pour" class="hidden"><iframe data-src="https://hadaad11.github.io/pourtracker-/" title="Pour Tracker"></iframe></section>
+    <section id="t-manpower" class="hidden"><iframe data-src="https://hadaad11.github.io/manpower/" title="Manpower"></iframe></section>
+    <section id="t-ice" class="hidden"><iframe data-src="ice/" title="Ice Calculator"></iframe></section>
+    <section id="t-maintenance" class="hidden">
+      <div class="tools"><a class="btn" href="https://docs.google.com/spreadsheets/d/1xrmjnlPOJG7SzjT9lYIkJhaIDJEGFDENoPuQJgxvy30/edit?gid=134919722#gid=134919722" target="_blank" rel="noopener" style="text-decoration:none">Open in Google Sheets ↗</a>
+        <span class="note">Opens only for Google accounts the sheet is shared with.</span></div>
+      <iframe data-src="https://docs.google.com/spreadsheets/d/1xrmjnlPOJG7SzjT9lYIkJhaIDJEGFDENoPuQJgxvy30/preview?gid=134919722" title="Maintenance"></iframe>
+    </section>
+  </main>
+</div>
+
+<script>
+'use strict';
+// ?local=1 reads data.enc next to the page (testing on the server PC).
+const DATA_URL = new URLSearchParams(location.search).has('local') ? 'data.enc'
+  : 'https://raw.githubusercontent.com/hadaad11/ncm-hub/data/data.enc';
+const KEY = 'ncm-hub-pw';
+let D = null, PW = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = v => { const x = parseFloat(String(v ?? '').replace(/,/g, '')); return isNaN(x) ? null : x; };
+const fmt = (v, d = 0) => { const x = num(v); return x === null ? esc(v ?? '-') : x.toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d}); };
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+function store(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+async function decrypt(blob, pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({name: 'PBKDF2', hash: 'SHA-256', salt: b64(blob.salt), iterations: blob.iter},
+    base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({name: 'AES-GCM', iv: b64(blob.iv)}, key, b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+async function fetchData(pw) {
+  const r = await fetch(DATA_URL + '?t=' + Date.now(), {cache: 'no-store'});
+  if (!r.ok) throw new Error('Could not download the data (' + r.status + ').');
+  const blob = await r.json();
+  try { return await decrypt(blob, pw); } catch (e) { throw new Error('Wrong password.'); }
+}
+
+async function open(pw, remember) {
+  $('#err').textContent = ''; $('#go').disabled = true; $('#go').textContent = 'Opening…';
+  try {
+    D = await fetchData(pw); PW = pw;
+    if (remember) store(KEY, pw);
+    $('#lock').classList.add('hidden'); $('#app').classList.remove('hidden');
+    render();
+  } catch (e) {
+    $('#err').textContent = e.message; store(KEY, null);
+  } finally { $('#go').disabled = false; $('#go').textContent = 'Open'; }
+}
+
+$('#lockForm').addEventListener('submit', e => { e.preventDefault(); open($('#pw').value, $('#remember').checked); });
+$('#logout').onclick = () => { store(KEY, null); location.reload(); };
+$('#reload').onclick = refresh;
+async function refresh() { if (!PW) return; try { D = await fetchData(PW); render(); } catch (e) {} }
+setInterval(refresh, 5 * 60 * 1000);
+
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + b.dataset.t));
+  const f = document.querySelector('#t-' + b.dataset.t + ' iframe');
+  if (f && !f.src) f.src = f.dataset.src;
+  store('ncm-hub-tab', b.dataset.t);
+});
+
+function age(iso) {
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 2) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.floor(m / 60); return h < 24 ? h + ' h ago' : Math.floor(h / 24) + ' days ago';
+}
+const label = id => (D.plants.find(p => p.id === id) || {label: id}).label;
+
+function render() {
+  $('#updated').textContent = 'Updated ' + age(D.generated);
+  renderPlants(); renderReports(); renderConsumption();
+}
+
+function kpiTotals(period) {
+  const t = {del: 0, m3: 0, real: 0};
+  for (const r of Object.values(D.kpi[period] || {})) { t.del += num(r[0]) || 0; t.m3 += num(r[1]) || 0; t.real += num(r[2]) || 0; }
+  return t;
+}
+
+function renderPlants() {
+  const td = kpiTotals('today'), mo = kpiTotals('month');
+  const stale = (Date.now() - new Date(D.generated)) > 30 * 60000;
+  let h = '';
+  if (stale) h += '<div class="warn">This data is more than 30 minutes old. The server PC may be off or offline.</div>';
+  if (D.down && D.down.length) h += '<div class="warn">Not reachable right now: ' + esc(D.down.join(', ')) + '</div>';
+  h += '<div class="grid">' +
+    card(fmt(td.m3, 1), 'Today m³') + card(fmt(td.del), 'Today deliveries') +
+    card(fmt(mo.m3, 1), 'Month m³ (' + esc(D.month) + ')') + card(fmt(mo.del), 'Month deliveries') + '</div>';
+  h += '<h2>Plants</h2><div class="tw"><table><tr><th>Plant</th><th></th><th class="num">Today m³</th><th class="num">Deliveries</th><th class="num">Customers</th><th class="num">Month m³</th><th>Last</th></tr>';
+  for (const p of D.plants) {
+    const t = D.kpi.today[p.id], m = D.kpi.month[p.id], up = !!t;
+    h += '<tr><td><b>' + esc(p.label) + '</b></td><td class="' + (up ? 'up">online' : 'down">offline') + '</td>' +
+      '<td class="num">' + (t ? fmt(t[1], 1) : '-') + '</td><td class="num">' + (t ? fmt(t[0]) : '-') + '</td>' +
+      '<td class="num">' + (t ? fmt(t[3]) : '-') + '</td><td class="num">' + (m ? fmt(m[1], 1) : '-') + '</td>' +
+      '<td>' + esc(t ? t[5] : '-') + '</td></tr>';
+  }
+  h += '</table></div>';
+  // daily production, all plants summed
+  const days = {};
+  for (const rows of Object.values((D.reports.gunluk || {}).rows || {}))
+    for (const r of rows) days[r[0]] = (days[r[0]] || 0) + (num(r[1]) || 0);
+  const keys = Object.keys(days).sort(), max = Math.max(1, ...Object.values(days));
+  if (keys.length) {
+    h += '<h2>Daily production this month (m³)</h2><div class="bars">' + keys.map(k =>
+      '<div class="bar" title="' + esc(k) + ': ' + fmt(days[k], 1) + ' m³"><i style="height:' + (days[k] / max * 100).toFixed(1) + '%"></i><span>' + esc(k.slice(8)) + '</span></div>').join('') + '</div>';
+  }
+  if (D.problems && D.problems.length) h += '<h2>Problems</h2><div class="tw"><table>' + D.problems.map(p => '<tr><td>' + esc(p) + '</td></tr>').join('') + '</table></div>';
+  $('#t-plants').innerHTML = h;
+}
+const card = (v, l) => '<div class="card"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
+
+function renderReports() {
+  const sec = $('#t-reports');
+  if (!sec.dataset.ready) {
+    const opts = Object.entries(D.reports).filter(([k]) => k !== 'gunluk')
+      .map(([k, r]) => '<option value="' + k + '">' + esc(r.title) + (r.period === 'today' ? ' (today)' : ' (this month)') + '</option>').join('');
+    sec.innerHTML = '<div class="tools"><select id="rk">' + opts + '</select><select id="rp"></select><input id="rq" type="search" placeholder="Search…"></div><div class="note" id="rn"></div><div class="tw" id="rt"></div>';
+    sec.dataset.ready = '1';
+    ['rk', 'rp'].forEach(id => $('#' + id).onchange = drawReport);
+    $('#rq').oninput = drawReport;
+  }
+  $('#rp').innerHTML = '<option value="">All plants</option>' + D.plants.map(p => '<option value="' + esc(p.id) + '">' + esc(p.label) + '</option>').join('');
+  drawReport();
+}
+
+function drawReport() {
+  const r = D.reports[$('#rk').value]; if (!r) return;
+  const pid = $('#rp').value, q = $('#rq').value.trim().toLowerCase();
+  const multi = !pid;
+  let rows = [];
+  for (const [id, rs] of Object.entries(r.rows)) if (!pid || id === pid) for (const x of rs) rows.push(multi ? [label(id), ...x] : x);
+  if (q) rows = rows.filter(x => x.join(' ').toLowerCase().includes(q));
+  const cols = multi ? ['Plant', ...r.columns] : r.columns;
+  const numIdx = new Set(r.numeric.map(i => i + (multi ? 1 : 0)));
+  const sums = cols.map((_, i) => numIdx.has(i) ? rows.reduce((a, x) => a + (num(x[i]) || 0), 0) : null);
+  let h = '<table><tr>' + cols.map((c, i) => '<th' + (numIdx.has(i) ? ' class="num"' : '') + '>' + esc(c) + '</th>').join('') + '</tr>';
+  h += rows.map(x => '<tr>' + cols.map((_, i) => '<td' + (numIdx.has(i) ? ' class="num' + ((num(x[i]) || 0) < 0 ? ' neg' : '') + '">' + fmt(x[i], Number.isInteger(num(x[i])) ? 0 : 2) : '>' + esc(x[i])) + '</td>').join('') + '</tr>').join('');
+  const showSum = rows.length > 1 && !/%|Avg|W\/C|Slump|Dmax/.test(cols.join());
+  if (showSum) h += '<tfoot><tr>' + sums.map((s, i) => '<td' + (s !== null ? ' class="num">' + fmt(s, 2) : '>' + (i === 0 ? 'Total' : '')) + '</td>').join('') + '</tr></tfoot>';
+  $('#rt').innerHTML = h + '</table>';
+  $('#rn').textContent = rows.length + ' rows · ' + (r.period === 'today' ? 'today' : 'month ' + D.month);
+}
+
+function renderConsumption() {
+  const c = D.consumption || {}, t = c.totals || {};
+  let h = '';
+  if (!c.totals) { $('#t-consumption').innerHTML = '<p class="note">No consumption data.</p>'; return; }
+  h += '<div class="grid">' + card(fmt(t.teori), 'Theory kg') + card(fmt(t.kuru), 'Dry real kg') +
+    card('<span class="' + (t.fark < 0 ? 'neg' : '') + '">' + fmt(t.fark) + '</span>', 'Difference kg') +
+    card('<span class="' + (t.yuzde < 0 ? 'neg' : '') + '">' + esc(t.yuzde) + ' %</span>', 'Difference') + '</div>';
+  h += table('Materials (' + esc(D.month) + ')', c.materials);
+  h += table('Mixes (' + esc(D.month) + ')', c.mixes);
+  $('#t-consumption').innerHTML = h;
+}
+function table(title, rows) {
+  if (!rows || !rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  return '<h2>' + title + '</h2><div class="tw"><table><tr>' + cols.map(c => '<th' + (typeof rows[0][c] === 'number' ? ' class="num"' : '') + '>' + esc(c) + '</th>').join('') + '</tr>' +
+    rows.map(r => '<tr>' + cols.map(c => typeof r[c] === 'number' ? '<td class="num' + (r[c] < 0 ? ' neg' : '') + '">' + fmt(r[c], Number.isInteger(r[c]) ? 0 : 2) + '</td>' : '<td>' + esc(r[c]) + '</td>').join('') + '</tr>').join('') + '</table></div>';
+}
+
+// restore last tab + saved password
+const savedTab = load('ncm-hub-tab');
+const saved = load(KEY);
+if (saved) open(saved, true);
+if (savedTab) setTimeout(() => { const b = document.querySelector('#tabs button[data-t="' + savedTab + '"]'); if (b) b.click(); }, 0);
+</script>
+</body>
+</html>
