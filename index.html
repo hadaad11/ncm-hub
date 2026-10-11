@@ -55,6 +55,16 @@ tfoot td{font-weight:650;background:var(--soft)}
 .note{color:var(--mut);font-size:12.5px;margin:6px 0 12px}
 .warn{background:#fef3c7;color:#92400e;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:14px}
 iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--line);border-radius:12px;background:#fff}
+.clk{cursor:pointer}
+tr.clk:hover td{background:var(--soft)}
+.bar.clk:hover i{opacity:.75}
+.bar em{font-style:normal;font-size:9.5px;color:var(--mut);margin-bottom:2px;white-space:nowrap}
+.hint{text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--mut)}
+th.srt{cursor:pointer;user-select:none}
+th.srt:hover{color:var(--acc)}
+.fl{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
+.fl input{padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--txt)}
+.tools .btn{padding:7px 13px;font-size:13px}
 .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
 .links a:hover{border-color:var(--acc)}
@@ -80,7 +90,7 @@ iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--line);border
       <button class="btn ghost" id="logout">Lock</button></div>
     <nav id="tabs">
       <button data-t="plants" class="on">Plants</button>
-      <button data-t="td">Target vs Dry</button>
+      <button data-t="td">Consumption</button>
       <button data-t="pour">Pour Tracker</button>
       <button data-t="ice">Ice</button>
       <button data-t="maintenance">Maintenance</button>
@@ -184,10 +194,10 @@ function renderPlants() {
   h += '<div class="grid">' +
     card(fmt(td.m3, 1), 'Today m³') + card(fmt(td.del), 'Today deliveries') +
     card(fmt(mo.m3, 1), 'Month m³ (' + esc(D.month) + ')') + card(fmt(mo.del), 'Month deliveries') + '</div>';
-  h += '<h2>Plants</h2><div class="tw"><table><tr><th>Plant</th><th></th><th class="num">Today m³</th><th class="num">Deliveries</th><th class="num">Customers</th><th class="num">Month m³</th><th>Last</th></tr>';
+  h += '<h2>Plants <span class="hint">· tap a plant to see its consumption</span></h2><div class="tw"><table><tr><th>Plant</th><th></th><th class="num">Today m³</th><th class="num">Deliveries</th><th class="num">Customers</th><th class="num">Month m³</th><th>Last</th></tr>';
   for (const p of D.plants) {
     const t = D.kpi.today[p.id], m = D.kpi.month[p.id], up = !!t;
-    h += '<tr><td><b>' + esc(p.label) + '</b></td><td class="' + (up ? 'up">online' : 'down">offline') + '</td>' +
+    h += '<tr class="clk" data-goplant="' + esc(p.label) + '"><td><b>' + esc(p.label) + '</b></td><td class="' + (up ? 'up">online' : 'down">offline') + '</td>' +
       '<td class="num">' + (t ? fmt(t[1], 1) : '-') + '</td><td class="num">' + (t ? fmt(t[0]) : '-') + '</td>' +
       '<td class="num">' + (t ? fmt(t[3]) : '-') + '</td><td class="num">' + (m ? fmt(m[1], 1) : '-') + '</td>' +
       '<td>' + esc(t ? t[5] : '-') + '</td></tr>';
@@ -199,41 +209,144 @@ function renderPlants() {
     for (const r of rows) days[r[0]] = (days[r[0]] || 0) + (num(r[1]) || 0);
   const keys = Object.keys(days).sort(), max = Math.max(1, ...Object.values(days));
   if (keys.length) {
-    h += '<h2>Daily production this month (m³)</h2><div class="bars">' + keys.map(k =>
-      '<div class="bar" title="' + esc(k) + ': ' + fmt(days[k], 1) + ' m³"><i style="height:' + (days[k] / max * 100).toFixed(1) + '%"></i><span>' + esc(k.slice(8)) + '</span></div>').join('') + '</div>';
+    h += '<h2>Daily production this month (m³) <span class="hint">· tap a day to see its consumption</span></h2><div class="bars">' + keys.map(k =>
+      '<div class="bar clk" data-goday="' + esc(k) + '" title="' + esc(k) + ': ' + fmt(days[k], 1) + ' m³"><em>' + fmt(days[k], 0) + '</em><i style="height:' + (days[k] / max * 85).toFixed(1) + '%"></i><span>' + esc(k.slice(8)) + '</span></div>').join('') + '</div>';
   }
   if (D.problems && D.problems.length) h += '<h2>Problems</h2><div class="tw"><table>' + D.problems.map(p => '<tr><td>' + esc(p) + '</td></tr>').join('') + '</table></div>';
-  $('#t-plants').innerHTML = h;
+  const sec = $('#t-plants');
+  sec.innerHTML = h;
+  sec.querySelectorAll('[data-goplant]').forEach(r => r.onclick = () => goConsumption({plant: r.dataset.goplant}));
+  sec.querySelectorAll('[data-goday]').forEach(b => b.onclick = () => goConsumption({from: b.dataset.goday, to: b.dataset.goday}));
+}
+// YYYY-MM-DD in the viewer's local time (toISOString would give the UTC day).
+const localDay = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function goConsumption(f) {
+  const today = localDay();
+  CF = Object.assign({plant: '', from: today.slice(0, 8) + '01', to: today, view: 'malzeme', q: ''}, f);
+  CSORT = null;
+  renderTD();
+  document.querySelector('#tabs button[data-t="td"]').click();
+  window.scrollTo(0, 0);
 }
 const card = (v, l) => '<div class="card"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
 
-// Target (theory) vs Dry real consumption, all plants or one plant, this month.
-let tdPlant = '';
-function renderTD() {
-  const sec = $('#t-td');
-  const byPlant = D.consumption_by_plant || {};
-  const src = tdPlant ? byPlant[tdPlant] : D.consumption;
-  if (!D.consumption || !D.consumption.totals) { sec.innerHTML = '<p class="note">No consumption data.</p>'; return; }
-  const t = (src || {}).totals || {};
-  const pct = v => '<span class="' + (v < 0 ? 'neg' : '') + '">' + fmt(v, 2) + ' %</span>';
-  let h = '<div class="tools">' + ['', ...Object.keys(byPlant)].map(p =>
-    '<button class="btn' + (p === tdPlant ? '' : ' ghost') + '" data-tdp="' + esc(p) + '">' + (p ? esc(p) : 'All plants') + '</button>').join('') + '</div>';
-  h += '<p class="note">' + esc(D.month) + ' · ' + fmt(t.m3, 1) + ' m³ produced</p>';
-  h += '<div class="grid">' + card(fmt(t.teori), 'Target (theory) kg') + card(fmt(t.kuru), 'Dry real kg') +
-    card('<span class="' + (t.fark < 0 ? 'neg' : '') + '">' + fmt(t.fark) + '</span>', 'Difference kg') + card(pct(t.yuzde), 'Difference') + '</div>';
-  h += tdTable('Materials', ['Material', 'Group'], ['Malzeme', 'Grup'], (src || {}).materials);
-  h += tdTable('Mixes', ['Formula', 'Product', 'm³'], ['Formul', 'Urun', 'M3'], (src || {}).mixes);
-  sec.innerHTML = h;
-  sec.querySelectorAll('[data-tdp]').forEach(b => b.onclick = () => { tdPlant = b.dataset.tdp; renderTD(); });
+/* Consumption - same filters and views as the program's Consumption tab:
+   plant, date range, By material / By mix / By day / By plant, search, sortable columns.
+   Grouping mirrors core/consumption.py: names merged ignoring case (most used spelling
+   wins), m³ counted once per (plant, day, mix). */
+const TK_VIEWS = [['malzeme', 'By material'], ['karisim', 'By mix'], ['gun', 'By day'], ['santral', 'By plant']];
+const TK_COLS = {
+  malzeme: [['Malzeme', 'Material'], ['Grup', 'Group'], ['Teori', 'Theory kg'], ['Tarti', 'Weighed kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
+  karisim: [['Formul', 'Mix'], ['Urun', 'Product'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
+  gun: [['Tarih', 'Date'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
+  santral: [['Santral', 'Plant'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']]
+};
+const TK_NUM = ['Teori', 'Tarti', 'Kuru', 'Fark', 'Yuzde', 'M3'];
+let CF = {plant: '', from: '', to: '', view: 'malzeme', q: ''}, CSORT = null, CROWS = null;
+
+function consRows() {           // unpack once per data load
+  if (CROWS && CROWS.src === D.consumption) return CROWS.rows;
+  const c = D.consumption || {}, S = c.strings || [], nt = (c.text || []).length;
+  const rows = (c.rows || []).map(r => {
+    const o = {GunKey: r[0], Tarih: r[0].slice(0, 4) + '-' + r[0].slice(4, 6) + '-' + r[0].slice(6, 8)};
+    c.text.forEach((k, i) => o[k] = S[r[1 + i]]);
+    c.num.forEach((k, i) => o[k] = r[1 + nt + i]);
+    return o;
+  });
+  CROWS = {src: D.consumption, rows};
+  return rows;
 }
-function tdTable(title, heads, keys, rows) {
-  if (!rows || !rows.length) return '';
-  const n = (v, d = 0) => '<td class="num' + (v < 0 ? ' neg' : '') + '">' + fmt(v, d) + '</td>';
-  return '<h2>' + title + '</h2><div class="tw"><table><tr>' +
-    heads.map((x, i) => '<th' + (keys[i] === 'M3' ? ' class="num"' : '') + '>' + x + '</th>').join('') +
-    '<th class="num">Target kg</th><th class="num">Dry real kg</th><th class="num">Diff kg</th><th class="num">Diff %</th></tr>' +
-    rows.map(r => '<tr>' + keys.map(k => k === 'M3' ? n(r[k], 1) : '<td>' + esc(r[k]) + '</td>').join('') +
-      n(r.Teori) + n(r.Kuru) + n(r.Fark) + n(r.Yuzde, 2) + '</tr>').join('') + '</table></div>';
+const pct = (f, t) => t ? Math.round(f * 10000 / t) / 100 : 0;
+function m3Once(rs) { const s = {}; for (const r of rs) s[r.Santral + '|' + r.GunKey + '|' + r.Formul] = r.M3; return Object.values(s).reduce((a, b) => a + b, 0); }
+function groupBy(rs, field, ci) {
+  const g = new Map();
+  for (const r of rs) {
+    const k = ci ? String(r[field]).toLowerCase() : r[field];
+    if (!g.has(k)) g.set(k, {rows: [], spell: {}});
+    const e = g.get(k); e.rows.push(r); e.spell[r[field]] = (e.spell[r[field]] || 0) + 1;
+  }
+  return [...g.values()].map(e => ({label: Object.entries(e.spell).sort((a, b) => b[1] - a[1])[0][0], rows: e.rows}));
+}
+function sums(rs) {
+  const t = {Teori: 0, Tarti: 0, Kuru: 0};
+  for (const r of rs) { t.Teori += r.Teori; t.Tarti += r.Tarti; t.Kuru += r.Kuru; }
+  t.Fark = t.Kuru - t.Teori; t.Yuzde = pct(t.Fark, t.Teori); return t;
+}
+function consView(rs, view) {
+  if (view === 'malzeme') return groupBy(rs, 'StdMalzeme', true).map(g => Object.assign({Malzeme: g.label, Grup: g.rows[0].Grup}, sums(g.rows))).sort((a, b) => Math.abs(b.Kuru) - Math.abs(a.Kuru));
+  if (view === 'karisim') return groupBy(rs, 'StdFormul', true).map(g => Object.assign({Formul: g.label, Urun: g.rows[0].Urun, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => b.M3 - a.M3);
+  if (view === 'gun') return groupBy(rs, 'Tarih', false).map(g => Object.assign({Tarih: g.label, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => a.Tarih.localeCompare(b.Tarih));
+  return groupBy(rs, 'Santral', false).map(g => Object.assign({Santral: g.label, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => a.Santral.localeCompare(b.Santral));
+}
+
+function renderTD() {
+  const sec = $('#t-td'), all = consRows();
+  if (!all.length) { sec.innerHTML = '<p class="note">No consumption data.</p>'; return; }
+  const min = (D.consumption.from || all[0].Tarih), max = localDay();
+  if (!CF.from) CF.from = max.slice(0, 8) + '01';
+  if (!CF.to) CF.to = max;
+  const plants = [...new Set(all.map(r => r.Santral))].sort();
+  if (!sec.dataset.ready) {
+    sec.innerHTML =
+      '<div class="tools" id="cPlants"></div>' +
+      '<div class="tools"><label class="fl">From <input type="date" id="cFrom"></label><label class="fl">To <input type="date" id="cTo"></label>' +
+      '<button class="btn ghost" data-rng="today">Today</button><button class="btn ghost" data-rng="month">This month</button><button class="btn ghost" data-rng="last">Last month</button></div>' +
+      '<div class="grid" id="cKpis"></div>' +
+      '<div class="tools"><select id="cView">' + TK_VIEWS.map(v => '<option value="' + v[0] + '">' + v[1] + '</option>').join('') + '</select>' +
+      '<input type="search" id="cQ" placeholder="Search…"><span class="note" id="cCount"></span></div>' +
+      '<div class="tw"><table id="cTable"></table></div>';
+    sec.dataset.ready = '1';
+    $('#cFrom').onchange = e => { CF.from = e.target.value; drawCons(); };
+    $('#cTo').onchange = e => { CF.to = e.target.value; drawCons(); };
+    $('#cView').onchange = e => { CF.view = e.target.value; CSORT = null; drawCons(); };
+    $('#cQ').oninput = e => { CF.q = e.target.value.trim().toLowerCase(); drawCons(); };
+    sec.querySelectorAll('[data-rng]').forEach(b => b.onclick = () => {
+      const t = localDay();
+      if (b.dataset.rng === 'today') CF.from = CF.to = t;
+      else if (b.dataset.rng === 'month') { CF.from = t.slice(0, 8) + '01'; CF.to = t; }
+      else { const last = new Date(+t.slice(0, 4), +t.slice(5, 7) - 1, 0); CF.to = localDay(last); CF.from = CF.to.slice(0, 8) + '01'; }
+      drawCons();
+    });
+  }
+  $('#cPlants').innerHTML = ['', ...plants].map(p => '<button class="btn' + (p === CF.plant ? '' : ' ghost') + '" data-cp="' + esc(p) + '">' + (p ? esc(p) : 'All plants') + '</button>').join('');
+  $('#cPlants').querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { CF.plant = b.dataset.cp; renderTD(); });
+  ['cFrom', 'cTo'].forEach(id => { $('#' + id).min = min; $('#' + id).max = max; });
+  drawCons();
+}
+
+function drawCons() {
+  $('#cFrom').value = CF.from; $('#cTo').value = CF.to; $('#cView').value = CF.view; $('#cQ').value = CF.q;
+  const from = CF.from.replace(/-/g, ''), to = CF.to.replace(/-/g, '');
+  const rs = consRows().filter(r => (!CF.plant || r.Santral === CF.plant) && r.GunKey >= from && r.GunKey <= to);
+  const t = sums(rs), m3 = m3Once(rs);
+  const sign = (v, d) => '<span class="' + (v < 0 ? 'neg' : '') + '">' + fmt(v, d) + '</span>';
+  $('#cKpis').innerHTML = card(fmt(m3, 1), 'Concrete m³') + card(fmt(t.Teori), 'Theory kg') + card(fmt(t.Kuru), 'Dry Real kg') +
+    card(sign(t.Fark, 0), 'Difference kg') + card(sign(t.Yuzde, 2) + ' %', 'Difference %');
+  const cols = TK_COLS[CF.view];
+  let rows = consView(rs, CF.view);
+  if (CF.q) rows = rows.filter(r => cols.some(c => String(r[c[0]] ?? '').toLowerCase().includes(CF.q)));
+  if (CSORT) {
+    const n = TK_NUM.includes(CSORT.k);
+    rows = rows.slice().sort((a, b) => { let x = a[CSORT.k], y = b[CSORT.k]; if (!n) { x = String(x); y = String(y); } return (x > y ? 1 : x < y ? -1 : 0) * CSORT.d; });
+  }
+  const cell = (r, c) => {
+    const v = r[c[0]];
+    if (!TK_NUM.includes(c[0])) return '<td>' + esc(v) + '</td>';
+    const neg = (c[0] === 'Fark' || c[0] === 'Yuzde') && v < 0;
+    return '<td class="num' + (neg ? ' neg' : '') + '">' + fmt(v, c[0] === 'Yuzde' ? 2 : c[0] === 'M3' ? 1 : 0) + '</td>';
+  };
+  const drill = CF.view === 'gun' ? 'data-cday' : CF.view === 'santral' ? 'data-cplant' : '';
+  $('#cTable').innerHTML = '<tr>' + cols.map(c => '<th class="srt' + (TK_NUM.includes(c[0]) ? ' num' : '') + '" data-k="' + c[0] + '">' + c[1] +
+      (CSORT && CSORT.k === c[0] ? (CSORT.d > 0 ? ' ▲' : ' ▼') : '') + '</th>').join('') + '</tr>' +
+    (rows.length ? rows.map(r => '<tr' + (drill ? ' class="clk" ' + drill + '="' + esc(r[cols[0][0]]) + '"' : '') + '>' + cols.map(c => cell(r, c)).join('') + '</tr>').join('')
+      : '<tr><td colspan="' + cols.length + '" class="note">No production in this range.</td></tr>');
+  $('#cCount').textContent = rows.length + ' rows · ' + CF.from + ' → ' + CF.to + (CF.plant ? ' · ' + CF.plant : '');
+  $('#cTable').querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; CSORT = CSORT && CSORT.k === k ? {k, d: -CSORT.d} : {k, d: TK_NUM.includes(k) ? -1 : 1}; drawCons();
+  });
+  // drill down: a day row -> that day; a plant row -> that plant
+  $('#cTable').querySelectorAll('[data-cday]').forEach(tr => tr.onclick = () => { CF.from = CF.to = tr.dataset.cday; CF.view = 'malzeme'; CSORT = null; drawCons(); });
+  $('#cTable').querySelectorAll('[data-cplant]').forEach(tr => tr.onclick = () => { CF.plant = tr.dataset.cplant; CF.view = 'malzeme'; CSORT = null; renderTD(); });
 }
 
 // restore last tab + saved password
