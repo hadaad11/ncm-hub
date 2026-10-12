@@ -329,8 +329,8 @@ const card = (v, l) => '<div class="card"><div class="v">' + v + '</div><div cla
    wins), m³ counted once per (plant, day, mix). */
 const TK_VIEWS = [['malzeme', 'By material'], ['karisim', 'By mix'], ['gun', 'By day'], ['santral', 'By plant']];
 const TK_COLS = {
-  malzeme: [['Malzeme', 'Material'], ['Grup', 'Group'], ['Teori', 'Theory kg'], ['Tarti', 'Weighed kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
-  karisim: [['Formul', 'Mix'], ['Urun', 'Product'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
+  malzeme: [['Malzeme', 'Standard Material'], ['Grup', 'Group'], ['Teori', 'Theory kg'], ['Tarti', 'Weighed kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
+  karisim: [['Formul', 'Standard Formula'], ['Urun', 'Product'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
   gun: [['Tarih', 'Date'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
   santral: [['Santral', 'Plant'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']]
 };
@@ -416,8 +416,9 @@ function drawCons() {
   const sign = (v, d) => '<span class="' + (v < 0 ? 'neg' : '') + '">' + fmt(v, d) + '</span>';
   $('#cKpis').innerHTML = card(fmt(m3, 1), 'Concrete m³') + card(fmt(t.Teori), 'Theory kg') + card(fmt(t.Kuru), 'Dry Real kg') +
     card(sign(t.Fark, 0), 'Difference kg') + card(sign(t.Yuzde, 2) + ' %', 'Difference %');
-  const cols = TK_COLS[CF.view];
   let rows = consView(rs, CF.view);
+  // the sheet has no Group / Product columns: hide text columns that are empty everywhere
+  const cols = TK_COLS[CF.view].filter(c => TK_NUM.includes(c[0]) || rows.some(r => String(r[c[0]] ?? '').trim()));
   if (CF.q) rows = rows.filter(r => cols.some(c => String(r[c[0]] ?? '').toLowerCase().includes(CF.q)));
   if (CSORT) {
     const n = TK_NUM.includes(CSORT.k);
