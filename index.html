@@ -87,6 +87,8 @@ tfoot td{font-weight:650;background:var(--soft)}
 .note{color:var(--mut);font-size:12.5px;margin:6px 0 12px}
 .warn{background:#fef3c7;color:#92400e;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:14px}
 iframe{width:100%;height:calc(100vh - var(--hdr,63px) - 32px);border:1px solid var(--line);border-radius:12px;background:#fff}
+.srcbar{font-size:12.5px;color:var(--mut);margin:0 0 10px}
+.srcbar a{color:var(--acc);font-weight:600;text-decoration:none}
 .clk{cursor:pointer}
 tr.clk:hover td{background:var(--soft)}
 .bar.clk:hover i{opacity:.75}
@@ -127,6 +129,7 @@ th.srt:hover{color:var(--acc)}
     <nav id="tabs">
       <button data-t="plants" class="on"><i>🏭</i>Plants</button>
       <button data-t="td"><i>🧮</i>Consumption</button>
+      <button data-t="cement"><i>🏗️</i>Cement</button>
       <button data-t="pour"><i>🚚</i>Pour Tracker</button>
       <button data-t="ice"><i>🧊</i>Ice Calculate</button>
       <button data-t="maintenance"><i>🔧</i>Maintenance</button>
@@ -142,15 +145,17 @@ th.srt:hover{color:var(--acc)}
   <main>
     <section id="t-plants"></section>
     <section id="t-td" class="hidden"></section>
+    <section id="t-cement" class="hidden"><div class="card" id="cem"></div></section>
     <section id="t-pour" class="hidden"><iframe data-src="https://hadaad11.github.io/pourtracker-/" title="Pour Tracker"></iframe></section>
-    <section id="t-manpower" class="hidden"><iframe data-src="https://hadaad11.github.io/manpower/" title="Manpower"></iframe></section>
-    <section id="t-ice" class="hidden"><iframe data-src="ice/" title="Ice Calculator"></iframe></section>
+    <section id="t-manpower" class="hidden"><div class="srcbar">Source: <a href="https://docs.google.com/spreadsheets/d/1ddXiUN4VN5DKdL9Nik1TMOm0iysUOUCrNS-9l44tuPs/edit" target="_blank" rel="noopener">Man_Power_Professional (Google Sheet) ↗</a></div><iframe data-src="https://hadaad11.github.io/manpower/" title="Manpower"></iframe></section>
+    <section id="t-ice" class="hidden"><iframe data-src="https://elkady591.github.io/Ice-Calculator/" title="Ice Calculator"></iframe></section>
     <section id="t-maintenance" class="hidden"><div class="card" id="maint"></div></section>
   </main>
   </div>
 </div>
 
 <script src="maint.js"></script>
+<script src="cement.js"></script>
 <script>
 'use strict';
 // ?local=1 reads data.enc next to the page (testing on the server PC).
@@ -207,6 +212,7 @@ $('#tabs').addEventListener('click', e => {
   const f = document.querySelector('#t-' + b.dataset.t + ' iframe');
   if (f && !f.src) f.src = f.dataset.src;
   if (b.dataset.t === 'maintenance' && !$('#maint').dataset.done) { $('#maint').dataset.done = '1'; ncmMaint($('#maint')); }
+  if (b.dataset.t === 'cement' && !$('#cem').dataset.done) { $('#cem').dataset.done = '1'; ncmCement($('#cem')); }
   store('ncm-hub-tab', b.dataset.t);
   menu(false);
 });
@@ -375,6 +381,7 @@ function renderTD() {
   const plants = [...new Set(all.map(r => r.Santral))].sort();
   if (!sec.dataset.ready) {
     sec.innerHTML =
+      '<div class="srcbar">Source: <a href="https://docs.google.com/spreadsheets/d/1KTGfLyml5Yk24OmU6R6Kut2MILZ-Urz4WHTfjXvMB1k/edit?gid=1273815793#gid=1273815793" target="_blank" rel="noopener">NCM_Material_Report (Google Sheet) ↗</a></div>' +
       '<div class="tools" id="cPlants"></div>' +
       '<div class="tools"><label class="fl">From <input type="date" id="cFrom"></label><label class="fl">To <input type="date" id="cTo"></label>' +
       '<button class="btn ghost" data-rng="today">Today</button><button class="btn ghost" data-rng="month">This month</button><button class="btn ghost" data-rng="last">Last month</button></div>' +
