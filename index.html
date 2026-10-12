@@ -39,14 +39,31 @@ header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px 
 @media (max-width:600px){.topbar img{height:32px}.topbar span{display:none}}
 .lock-logo{background:#fff;border-radius:12px;padding:12px;margin:-6px -4px 18px;border-bottom:3px solid #34a853;text-align:center}
 .lock-logo img{height:48px;max-width:100%}
-.hd{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1200px;margin:0 auto}
-.hd b{font-size:17px}
-.hd .sp{flex:1}
-.hd small{color:var(--mut);font-size:12px}
-nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px;max-width:1200px;margin:0 auto}
-nav button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--mut);white-space:nowrap;font-weight:600}
-nav button.on{color:var(--acc);border-bottom-color:var(--acc)}
-main{max-width:1200px;margin:0 auto;padding:16px}
+/* left sidebar with the tabs; on phones it slides in from the left behind the ☰ button */
+.layout{display:flex;align-items:flex-start}
+.side{position:sticky;top:var(--hdr,63px);height:calc(100vh - var(--hdr,63px));width:220px;flex:0 0 220px;
+  background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 10px;overflow-y:auto}
+nav#tabs{display:flex;flex-direction:column;gap:3px}
+nav#tabs button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:10px;
+  padding:10px 12px;cursor:pointer;color:var(--mut);font-weight:600;font-size:14px}
+nav#tabs button i{font-style:normal;width:22px;text-align:center}
+nav#tabs button:hover{background:var(--soft);color:var(--txt)}
+nav#tabs button.on{background:var(--acc);color:#fff}
+.side-f{margin-top:auto;padding:12px 4px 0;border-top:1px solid var(--line)}
+.side-f small{display:block;color:var(--mut);font-size:12px;margin-bottom:8px}
+.side-b{display:flex;gap:6px}.side-b .btn{flex:1;padding:8px 10px;font-size:13px}
+main{flex:1;min-width:0;max-width:1200px;padding:16px 20px}
+.burger{display:none;background:none;border:1px solid #d6dbe3;border-radius:9px;padding:4px 10px;font-size:18px;cursor:pointer;color:#334155}
+.scrim{display:none}
+.topbar .tb{justify-content:flex-start}
+.topbar .tb span{margin-left:auto}
+@media (max-width:860px){
+  .burger{display:block}
+  .side{position:fixed;left:0;top:0;height:100vh;z-index:20;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.25)}
+  .side.open{transform:none}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:15}
+  main{padding:14px 12px}
+}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
 .v{font-size:22px;font-weight:650;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
@@ -69,7 +86,7 @@ tfoot td{font-weight:650;background:var(--soft)}
 .tools input{flex:1;min-width:160px}
 .note{color:var(--mut);font-size:12.5px;margin:6px 0 12px}
 .warn{background:#fef3c7;color:#92400e;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:14px}
-iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--line);border-radius:12px;background:#fff}
+iframe{width:100%;height:calc(100vh - var(--hdr,63px) - 32px);border:1px solid var(--line);border-radius:12px;background:#fff}
 .clk{cursor:pointer}
 tr.clk:hover td{background:var(--soft)}
 .bar.clk:hover i{opacity:.75}
@@ -103,19 +120,25 @@ th.srt:hover{color:var(--acc)}
 
 <div id="app" class="hidden">
   <header>
-    <div class="topbar"><div class="tb"><img src="ncm-logo.png" alt="NCM, Nuclear Concrete Mixes"><span>Plants Dashboard</span></div></div>
-    <div class="hd"><b>NCM Hub</b><small id="updated"></small><span class="sp"></span>
-      <button class="btn ghost" id="reload" title="Reload data">↻</button>
-      <button class="btn ghost" id="logout">Lock</button></div>
-    <nav id="tabs">
-      <button data-t="plants" class="on">Plants</button>
-      <button data-t="td">Consumption</button>
-      <button data-t="pour">Pour Tracker</button>
-      <button data-t="ice">Ice</button>
-      <button data-t="maintenance">Maintenance</button>
-      <button data-t="manpower">Manpower</button>
-    </nav>
+    <div class="topbar"><div class="tb"><button class="burger" id="burger" aria-label="Menu">☰</button><img src="ncm-logo.png" alt="NCM, Nuclear Concrete Mixes"><span>Plants Dashboard</span></div></div>
   </header>
+  <div class="layout">
+  <aside class="side" id="side">
+    <nav id="tabs">
+      <button data-t="plants" class="on"><i>🏭</i>Plants</button>
+      <button data-t="td"><i>🧮</i>Consumption</button>
+      <button data-t="pour"><i>🚚</i>Pour Tracker</button>
+      <button data-t="ice"><i>🧊</i>Ice</button>
+      <button data-t="maintenance"><i>🔧</i>Maintenance</button>
+      <button data-t="manpower"><i>👷</i>Manpower</button>
+    </nav>
+    <div class="side-f">
+      <small id="updated"></small>
+      <div class="side-b"><button class="btn ghost" id="reload" title="Reload data">↻ Reload</button>
+        <button class="btn ghost" id="logout">Lock</button></div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
   <main>
     <section id="t-plants"></section>
     <section id="t-td" class="hidden"></section>
@@ -124,6 +147,7 @@ th.srt:hover{color:var(--acc)}
     <section id="t-ice" class="hidden"><iframe data-src="ice/" title="Ice Calculator"></iframe></section>
     <section id="t-maintenance" class="hidden"><div class="card" id="maint"></div></section>
   </main>
+  </div>
 </div>
 
 <script src="maint.js"></script>
@@ -163,7 +187,7 @@ async function open(pw, remember) {
   try {
     D = await fetchData(pw); PW = pw;
     if (remember) store(KEY, pw);
-    $('#lock').classList.add('hidden'); $('#app').classList.remove('hidden');
+    $('#lock').classList.add('hidden'); $('#app').classList.remove('hidden'); fitHeader();
     render();
   } catch (e) {
     $('#err').textContent = e.message; store(KEY, null);
@@ -184,7 +208,15 @@ $('#tabs').addEventListener('click', e => {
   if (f && !f.src) f.src = f.dataset.src;
   if (b.dataset.t === 'maintenance' && !$('#maint').dataset.done) { $('#maint').dataset.done = '1'; ncmMaint($('#maint')); }
   store('ncm-hub-tab', b.dataset.t);
+  menu(false);
 });
+// phone menu
+function menu(open) { $('#side').classList.toggle('open', open); $('#scrim').classList.toggle('open', open); }
+$('#burger').onclick = () => menu(!$('#side').classList.contains('open'));
+$('#scrim').onclick = () => menu(false);
+// keep the sidebar just under the logo bar whatever its height
+function fitHeader() { document.documentElement.style.setProperty('--hdr', $('header').offsetHeight + 'px'); }
+addEventListener('resize', fitHeader);
 
 function age(iso) {
   const m = Math.round((Date.now() - new Date(iso)) / 60000);
