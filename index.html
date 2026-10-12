@@ -147,7 +147,7 @@ th.srt:hover{color:var(--acc)}
     <section id="t-td" class="hidden"></section>
     <section id="t-cement" class="hidden"><div class="card" id="cem"></div></section>
     <section id="t-pour" class="hidden"><iframe data-src="https://hadaad11.github.io/pourtracker-/" title="Pour Tracker"></iframe></section>
-    <section id="t-manpower" class="hidden"><div class="srcbar">Source: <a href="https://docs.google.com/spreadsheets/d/1ddXiUN4VN5DKdL9Nik1TMOm0iysUOUCrNS-9l44tuPs/edit" target="_blank" rel="noopener">Man_Power_Professional (Google Sheet) ↗</a></div><iframe data-src="https://hadaad11.github.io/manpower/" title="Manpower"></iframe></section>
+    <section id="t-manpower" class="hidden"><div class="card" id="mp"></div></section>
     <section id="t-ice" class="hidden"><iframe data-src="https://elkady591.github.io/Ice-Calculator/" title="Ice Calculator"></iframe></section>
     <section id="t-maintenance" class="hidden"><div class="card" id="maint"></div></section>
   </main>
@@ -156,6 +156,7 @@ th.srt:hover{color:var(--acc)}
 
 <script src="maint.js"></script>
 <script src="cement.js"></script>
+<script src="manpower.js"></script>
 <script>
 'use strict';
 // ?local=1 reads data.enc next to the page (testing on the server PC).
@@ -213,6 +214,7 @@ $('#tabs').addEventListener('click', e => {
   if (f && !f.src) f.src = f.dataset.src;
   if (b.dataset.t === 'maintenance' && !$('#maint').dataset.done) { $('#maint').dataset.done = '1'; ncmMaint($('#maint')); }
   if (b.dataset.t === 'cement' && !$('#cem').dataset.done) { $('#cem').dataset.done = '1'; ncmCement($('#cem')); }
+  if (b.dataset.t === 'manpower' && !$('#mp').dataset.done) { $('#mp').dataset.done = '1'; ncmManpower($('#mp')); }
   store('ncm-hub-tab', b.dataset.t);
   menu(false);
 });
