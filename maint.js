@@ -1,31 +1,40 @@
 /* NCM maintenance log view - reads the shared Google Sheet (CSV export) and draws
-   a clean, filterable table. Used by the NCM Hub page and the NCM PLANTS program.
+   clean, filterable tables with two sub-tabs like the sheet:
+   "أعمال الصيانة" (work done) and "قطع الغيار الناقصة" (missing spare parts).
+   Used by the NCM Hub page and the NCM PLANTS program.
    Usage: ncmMaint(hostElement) */
 (function () {
   'use strict';
   const SHEET = 'https://docs.google.com/spreadsheets/d/1xrmjnlPOJG7SzjT9lYIkJhaIDJEGFDENoPuQJgxvy30';
-  const GID = '134919722';
-  const CSV = SHEET + '/export?format=csv&gid=' + GID;
-  const EDIT = SHEET + '/edit?gid=' + GID + '#gid=' + GID;
+  const TABS = {
+    work: {gid: '134919722', label: '🔧 أعمال الصيانة'},
+    parts: {gid: '1265130294', label: '📦 قطع الغيار الناقصة'}
+  };
+  const csvUrl = gid => SHEET + '/export?format=csv&gid=' + gid;
+  const editUrl = gid => SHEET + '/edit?gid=' + gid + '#gid=' + gid;
 
   const CSS = `
 .nm{direction:rtl;font-family:inherit;color:inherit}
 .nm *{box-sizing:border-box}
-.nm-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.nm-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .nm-top h3{margin:0;font-size:17px;flex:1;min-width:180px}
 .nm-btn{display:inline-flex;align-items:center;gap:6px;background:#2457d6;color:#fff!important;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;text-decoration:none;cursor:pointer}
 .nm-btn.ghost{background:transparent;color:inherit!important;border:1px solid rgba(128,128,128,.35)}
+.nm-tabs{display:flex;gap:6px;border-bottom:1px solid rgba(128,128,128,.25);margin-bottom:14px}
+.nm-tab{background:none;border:0;border-bottom:3px solid transparent;padding:9px 14px;font:inherit;font-weight:700;font-size:14px;color:inherit;opacity:.6;cursor:pointer}
+.nm-tab.on{opacity:1;border-bottom-color:#2457d6;color:#2457d6}
 .nm-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
 .nm-k{border:1px solid rgba(128,128,128,.25);border-radius:12px;padding:11px 13px;background:rgba(128,128,128,.06)}
 .nm-k b{display:block;font-size:21px;font-variant-numeric:tabular-nums}
 .nm-k span{font-size:11.5px;opacity:.7}
+.nm-k.bad b{color:#c0352b}.nm-k.warn b{color:#c2410c}
 .nm-f{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .nm-chip{border:1px solid rgba(128,128,128,.35);background:transparent;color:inherit;border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-weight:600}
 .nm-chip.on{background:#2457d6;border-color:#2457d6;color:#fff}
 .nm-f input,.nm-f select{flex:1;min-width:150px;padding:7px 10px;border:1px solid rgba(128,128,128,.35);border-radius:9px;background:transparent;color:inherit;font:inherit;font-size:13px}
 .nm-f select{flex:0 0 auto;min-width:130px}
 .nm-f select option{color:#000}
-.nm-tw{overflow:auto;border:1px solid rgba(128,128,128,.25);border-radius:12px;max-height:calc(100vh - 330px);min-height:240px}
+.nm-tw{overflow:auto;border:1px solid rgba(128,128,128,.25);border-radius:12px;max-height:calc(100vh - 360px);min-height:240px}
 .nm table{width:100%;border-collapse:collapse;font-size:13.5px}
 .nm th{position:sticky;top:0;background:#2457d6;color:#fff;text-align:right;padding:9px 12px;font-size:12px;white-space:nowrap;z-index:1}
 .nm td{padding:9px 12px;border-bottom:1px solid rgba(128,128,128,.18);vertical-align:top}
@@ -33,12 +42,23 @@
 .nm td.d{white-space:nowrap;font-variant-numeric:tabular-nums;opacity:.85}
 .nm td.w{min-width:240px;line-height:1.5}
 .nm td.n{opacity:.75;font-size:12.5px;min-width:160px}
-.nm .pl{display:inline-block;min-width:34px;text-align:center;border-radius:6px;padding:2px 7px;font-weight:700;font-size:12px;color:#fff}
+.nm td.q{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700}
+.nm .pl{display:inline-block;min-width:34px;text-align:center;border-radius:6px;padding:2px 7px;font-weight:700;font-size:12px;color:#fff;white-space:nowrap}
+.nm .pr{display:inline-block;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px;white-space:nowrap}
 .nm-msg{padding:28px;text-align:center;opacity:.7}
 .nm-foot{font-size:12px;opacity:.65;margin-top:8px}`;
   const COLORS = {L1: '#2457d6', L2: '#0e7490', V3: '#7c3aed', V4: '#c2410c', V5: '#15803d'};
+  const PRIO = {'عاجل': {o: 0, bg: '#fde2e1', fg: '#b42318'}, 'عالي': {o: 1, bg: '#ffedd5', fg: '#c2410c'},
+                'متوسط': {o: 2, bg: '#fef9c3', fg: '#854d0e'}, 'منخفض': {o: 3, bg: '#e0f2fe', fg: '#075985'}};
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const plant = p => `<span class="pl" style="background:${COLORS[p] || '#64748b'}">${esc(p || '-')}</span>`;
+  const prio = p => { const s = PRIO[p] || {bg: 'rgba(128,128,128,.15)', fg: 'inherit'}; return `<span class="pr" style="background:${s.bg};color:${s.fg}">${esc(p || '-')}</span>`; };
+  // Dates are typed by hand (2026-10-06, 2026.10.8, 2026/10/8): normalise to YYYY-MM-DD.
+  const day = s => {
+    const m = String(s || '').trim().match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+    return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(s || '').trim();
+  };
 
   function parseCSV(t) {
     const rows = []; let row = [], cur = '', q = false;
@@ -53,57 +73,36 @@
     if (cur || row.length) { row.push(cur); rows.push(row); }
     return rows;
   }
-
-  function toItems(rows) {
-    const h = rows.findIndex(r => r.some(c => c.trim() === 'التاريخ'));
+  // Rows under the header row that contains `key`, as objects keyed by header text.
+  function table(rows, key) {
+    const h = rows.findIndex(r => r.some(c => c.trim() === key));
     if (h < 0) return [];
     const head = rows[h].map(c => c.trim());
-    const ix = name => head.indexOf(name);
-    const iD = ix('التاريخ'), iP = ix('المحطة'), iO = ix('اسم المشغل'),
-          iW = head.findIndex(c => c.startsWith('الأعمال')), iN = ix('ملاحظات');
-    // Dates are typed by hand (2026-10-06, 2026.10.8, 2026/10/8): normalise to YYYY-MM-DD.
-    const day = s => {
-      const m = String(s || '').trim().match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
-      return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(s || '').trim();
-    };
-    return rows.slice(h + 1).map(r => ({
-      date: day(r[iD]), plant: (r[iP] || '').trim(), op: (r[iO] || '').trim(),
-      work: (r[iW] || '').trim(), note: iN >= 0 ? (r[iN] || '').trim() : ''
-    })).filter(x => x.work || x.op);
+    return rows.slice(h + 1).map(r => { const o = {}; head.forEach((k, i) => { if (k) o[k] = (r[i] || '').trim(); }); return o; });
+  }
+  const col = (o, prefix) => { for (const k in o) if (k.startsWith(prefix)) return o[k]; return ''; };
+
+  async function load(gid) {
+    const r = await fetch(csvUrl(gid) + '&t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    return parseCSV(await r.text());
   }
 
-  window.ncmMaint = async function (host) {
-    if (!document.getElementById('nm-css')) {
-      const s = document.createElement('style'); s.id = 'nm-css'; s.textContent = CSS; document.head.appendChild(s);
-    }
-    host.innerHTML = '<div class="nm"><div class="nm-msg">جاري تحميل سجل الصيانة…</div></div>';
-    let items;
-    try {
-      const r = await fetch(CSV + '&t=' + Date.now(), {cache: 'no-store'});
-      if (!r.ok) throw new Error(r.status);
-      items = toItems(parseCSV(await r.text()));
-    } catch (e) {
-      host.innerHTML = '<div class="nm"><div class="nm-msg">تعذر تحميل الشيت. <a class="nm-btn" target="_blank" rel="noopener" href="' + EDIT + '">افتح الشيت ↗</a></div></div>';
-      return;
-    }
+  /* ---------- work done ---------- */
+  function workView(body, rows) {
+    const items = table(rows, 'التاريخ').map(o => ({date: day(o['التاريخ']), plant: o['المحطة'] || '', op: o['اسم المشغل'] || '',
+      work: col(o, 'الأعمال'), note: o['ملاحظات'] || ''})).filter(x => x.work || x.op);
     items.sort((a, b) => b.date.localeCompare(a.date));
     const plants = [...new Set(items.map(x => x.plant).filter(Boolean))].sort();
     const months = [...new Set(items.map(x => x.date.slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))].sort().reverse();
-    const st = {plant: '', month: '', q: ''};
     const thisMonth = new Date().toISOString().slice(0, 7);
-
-    host.innerHTML = `<div class="nm">
-      <div class="nm-top"><h3>🔧 سجل أعمال الصيانة</h3>
-        <a class="nm-btn" target="_blank" rel="noopener" href="${EDIT}">＋ إضافة / تعديل في الشيت</a>
-        <button class="nm-btn ghost" data-a="reload">↻ تحديث</button></div>
-      <div class="nm-kpis" data-a="kpis"></div>
-      <div class="nm-f"><button class="nm-chip on" data-p="">كل المحطات</button>${plants.map(p => `<button class="nm-chip" data-p="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+    const st = {plant: '', month: '', q: ''};
+    body.innerHTML = `<div class="nm-kpis" data-a="kpis"></div>
+      <div class="nm-f">${['', ...plants].map(p => `<button class="nm-chip${p ? '' : ' on'}" data-p="${esc(p)}">${p ? esc(p) : 'كل المحطات'}</button>`).join('')}</div>
       <div class="nm-f"><input type="search" placeholder="بحث في الأعمال أو اسم المشغل…" data-a="q">
         <select data-a="m"><option value="">كل الشهور</option>${months.map(m => `<option value="${m}">${m}</option>`).join('')}</select></div>
-      <div class="nm-tw" data-a="tw"></div>
-      <div class="nm-foot" data-a="foot"></div></div>`;
-    const $ = s => host.querySelector(s);
-
+      <div class="nm-tw" data-a="tw"></div><div class="nm-foot" data-a="foot"></div>`;
+    const $ = s => body.querySelector(s);
     function draw() {
       const q = st.q.toLowerCase();
       const list = items.filter(x => (!st.plant || x.plant === st.plant) && (!st.month || x.date.startsWith(st.month)) &&
@@ -115,17 +114,80 @@
         `<div class="nm-k"><b>${esc((base[0] || {}).date || '-')}</b><span>آخر عمل</span></div>` +
         `<div class="nm-k"><b>${new Set(base.map(x => x.op).filter(Boolean)).size}</b><span>عدد الفنيين</span></div>`;
       $('[data-a=tw]').innerHTML = list.length ? '<table><tr><th>التاريخ</th><th>المحطة</th><th>اسم المشغل</th><th>الأعمال التي تمت</th><th>ملاحظات</th></tr>' +
-        list.map(x => `<tr><td class="d">${esc(x.date)}</td><td><span class="pl" style="background:${COLORS[x.plant] || '#64748b'}">${esc(x.plant || '-')}</span></td>` +
-          `<td>${esc(x.op)}</td><td class="w">${esc(x.work)}</td><td class="n">${esc(x.note)}</td></tr>`).join('') + '</table>'
+        list.map(x => `<tr><td class="d">${esc(x.date)}</td><td>${plant(x.plant)}</td><td>${esc(x.op)}</td><td class="w">${esc(x.work)}</td><td class="n">${esc(x.note)}</td></tr>`).join('') + '</table>'
         : '<div class="nm-msg">لا توجد أعمال مطابقة.</div>';
       $('[data-a=foot]').textContent = list.length + ' عمل معروض · البيانات من Google Sheets';
     }
-    host.querySelectorAll('.nm-chip').forEach(b => b.onclick = () => {
-      host.querySelectorAll('.nm-chip').forEach(x => x.classList.toggle('on', x === b)); st.plant = b.dataset.p; draw();
+    body.querySelectorAll('.nm-chip').forEach(b => b.onclick = () => {
+      body.querySelectorAll('.nm-chip').forEach(x => x.classList.toggle('on', x === b)); st.plant = b.dataset.p; draw();
     });
     $('[data-a=q]').oninput = e => { st.q = e.target.value.trim(); draw(); };
     $('[data-a=m]').onchange = e => { st.month = e.target.value; draw(); };
-    $('[data-a=reload]').onclick = () => window.ncmMaint(host);
     draw();
+  }
+
+  /* ---------- missing spare parts ---------- */
+  function partsView(body, rows) {
+    const items = table(rows, 'اسم قطعة الغيار').map(o => ({date: day(o['تاريخ الطلب']), plant: o['المحطة'] || '', sys: col(o, 'الجزء'),
+      part: o['اسم قطعة الغيار'] || '', unit: o['الوحدة'] || '', qty: o['الكمية المطلوبة'] || '', prio: o['الأولوية'] || ''})).filter(x => x.part);
+    const po = p => (PRIO[p] || {o: 9}).o;
+    items.sort((a, b) => po(a.prio) - po(b.prio) || a.date.localeCompare(b.date));
+    const plants = [...new Set(items.map(x => x.plant).filter(Boolean))].sort();
+    const prios = [...new Set(items.map(x => x.prio).filter(Boolean))].sort((a, b) => po(a) - po(b));
+    const st = {plant: '', prio: '', q: ''};
+    body.innerHTML = `<div class="nm-kpis" data-a="kpis"></div>
+      <div class="nm-f" data-a="pl">${['', ...plants].map(p => `<button class="nm-chip${p ? '' : ' on'}" data-p="${esc(p)}">${p ? esc(p) : 'كل المحطات'}</button>`).join('')}</div>
+      <div class="nm-f" data-a="pr">${['', ...prios].map(p => `<button class="nm-chip${p ? '' : ' on'}" data-r="${esc(p)}">${p ? esc(p) : 'كل الأولويات'}</button>`).join('')}</div>
+      <div class="nm-f"><input type="search" placeholder="بحث في القطع أو الجزء…" data-a="q"></div>
+      <div class="nm-tw" data-a="tw"></div><div class="nm-foot" data-a="foot"></div>`;
+    const $ = s => body.querySelector(s);
+    function draw() {
+      const q = st.q.toLowerCase();
+      const base = items.filter(x => !st.plant || x.plant === st.plant);
+      const list = base.filter(x => (!st.prio || x.prio === st.prio) && (!q || (x.part + ' ' + x.sys).toLowerCase().includes(q)));
+      const n = p => base.filter(x => x.prio === p).length;
+      $('[data-a=kpis]').innerHTML =
+        `<div class="nm-k"><b>${base.length}</b><span>قطع ناقصة</span></div>` +
+        `<div class="nm-k bad"><b>${n('عاجل')}</b><span>عاجل</span></div>` +
+        `<div class="nm-k warn"><b>${n('عالي')}</b><span>عالي</span></div>` +
+        `<div class="nm-k"><b>${new Set(base.map(x => x.plant).filter(Boolean)).size}</b><span>محطات بها نواقص</span></div>`;
+      $('[data-a=tw]').innerHTML = list.length ? '<table><tr><th>الأولوية</th><th>المحطة</th><th>الجزء / النظام</th><th>اسم قطعة الغيار</th><th>الكمية</th><th>تاريخ الطلب</th></tr>' +
+        list.map(x => `<tr><td>${prio(x.prio)}</td><td>${plant(x.plant)}</td><td>${esc(x.sys)}</td><td class="w">${esc(x.part)}</td>` +
+          `<td class="q">${esc(x.qty)} ${esc(x.unit)}</td><td class="d">${esc(x.date)}</td></tr>`).join('') + '</table>'
+        : '<div class="nm-msg">لا توجد قطع مطابقة.</div>';
+      $('[data-a=foot]').textContent = list.length + ' قطعة معروضة · مرتبة بالأولوية ثم الأقدم · البيانات من Google Sheets';
+    }
+    $('[data-a=pl]').querySelectorAll('.nm-chip').forEach(b => b.onclick = () => {
+      $('[data-a=pl]').querySelectorAll('.nm-chip').forEach(x => x.classList.toggle('on', x === b)); st.plant = b.dataset.p; draw();
+    });
+    $('[data-a=pr]').querySelectorAll('.nm-chip').forEach(b => b.onclick = () => {
+      $('[data-a=pr]').querySelectorAll('.nm-chip').forEach(x => x.classList.toggle('on', x === b)); st.prio = b.dataset.r; draw();
+    });
+    $('[data-a=q]').oninput = e => { st.q = e.target.value.trim(); draw(); };
+    draw();
+  }
+
+  /* ---------- shell ---------- */
+  window.ncmMaint = async function (host, tab) {
+    if (!document.getElementById('nm-css')) {
+      const s = document.createElement('style'); s.id = 'nm-css'; s.textContent = CSS; document.head.appendChild(s);
+    }
+    tab = TABS[tab] ? tab : (host.dataset.nmTab || 'work');
+    host.dataset.nmTab = tab;
+    host.innerHTML = `<div class="nm">
+      <div class="nm-top"><h3>متابعة المحطات — الصيانة وقطع الغيار</h3>
+        <a class="nm-btn" target="_blank" rel="noopener" href="${editUrl(TABS[tab].gid)}">＋ إضافة / تعديل في الشيت</a>
+        <button class="nm-btn ghost" data-a="reload">↻ تحديث</button></div>
+      <div class="nm-tabs">${Object.entries(TABS).map(([k, t]) => `<button class="nm-tab${k === tab ? ' on' : ''}" data-t="${k}">${t.label}</button>`).join('')}</div>
+      <div data-a="body"><div class="nm-msg">جاري التحميل…</div></div></div>`;
+    host.querySelectorAll('.nm-tab').forEach(b => b.onclick = () => window.ncmMaint(host, b.dataset.t));
+    host.querySelector('[data-a=reload]').onclick = () => window.ncmMaint(host, tab);
+    const body = host.querySelector('[data-a=body]');
+    try {
+      const rows = await load(TABS[tab].gid);
+      (tab === 'parts' ? partsView : workView)(body, rows);
+    } catch (e) {
+      body.innerHTML = `<div class="nm-msg">تعذر تحميل الشيت. <a class="nm-btn" target="_blank" rel="noopener" href="${editUrl(TABS[tab].gid)}">افتح الشيت ↗</a></div>`;
+    }
   };
 })();
