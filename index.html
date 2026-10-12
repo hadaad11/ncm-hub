@@ -329,19 +329,12 @@ function goConsumption(f) {
 }
 const card = (v, l) => '<div class="card"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
 
-/* Consumption - same filters and views as the program's Consumption tab:
-   plant, date range, By material / By mix / By day / By plant, search, sortable columns.
-   Grouping mirrors core/consumption.py: names merged ignoring case (most used spelling
-   wins), m³ counted once per (plant, day, mix). */
-const TK_VIEWS = [['malzeme', 'By material'], ['karisim', 'By mix'], ['gun', 'By day'], ['santral', 'By plant']];
-const TK_COLS = {
-  malzeme: [['Malzeme', 'Standard Material'], ['Grup', 'Group'], ['Teori', 'Theory kg'], ['Tarti', 'Weighed kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
-  karisim: [['Formul', 'Standard Formula'], ['Urun', 'Product'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
-  gun: [['Tarih', 'Date'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']],
-  santral: [['Santral', 'Plant'], ['M3', 'm³'], ['Teori', 'Theory kg'], ['Kuru', 'Dry Real kg'], ['Fark', 'Diff kg'], ['Yuzde', 'Diff %']]
-};
-const TK_NUM = ['Teori', 'Tarti', 'Kuru', 'Fark', 'Yuzde', 'M3'];
-let CF = {plant: '', from: '', to: '', view: 'malzeme', q: ''}, CSORT = null, CROWS = null;
+/* Consumption = the sheet's "Mix Theory vs Dry" tab, built from its Raw Data rows:
+   filters Date From / To, Plant, Design Mix; one line per Standard Material with
+   Mix Theory, Dry Real, Difference (Mix - Dry) and %; then the mixes with the biggest
+   difference, like the daily email ("Mostly from" leaves out Water and ICE, because the
+   designs count the ice inside Water). Mix Theory = m³ x kg/m³ from the "Mix Designs" tab. */
+let CF = {plant: '', from: '', to: '', view: 'malzeme', q: '', mix: ''}, CSORT = null, CROWS = null;
 
 function consRows() {           // unpack once per data load
   if (CROWS && CROWS.src === D.consumption) return CROWS.rows;
@@ -350,33 +343,15 @@ function consRows() {           // unpack once per data load
     const o = {GunKey: r[0], Tarih: r[0].slice(0, 4) + '-' + r[0].slice(4, 6) + '-' + r[0].slice(6, 8)};
     c.text.forEach((k, i) => o[k] = S[r[1 + i]]);
     c.num.forEach((k, i) => o[k] = r[1 + nt + i]);
+    if (o.MixT === undefined) o.MixT = 0;
     return o;
   });
   CROWS = {src: D.consumption, rows};
   return rows;
 }
-const pct = (f, t) => t ? Math.round(f * 10000 / t) / 100 : 0;
+const pct = (f, t) => t ? f * 100 / t : 0;
 function m3Once(rs) { const s = {}; for (const r of rs) s[r.Santral + '|' + r.GunKey + '|' + r.Formul] = r.M3; return Object.values(s).reduce((a, b) => a + b, 0); }
-function groupBy(rs, field, ci) {
-  const g = new Map();
-  for (const r of rs) {
-    const k = ci ? String(r[field]).toLowerCase() : r[field];
-    if (!g.has(k)) g.set(k, {rows: [], spell: {}});
-    const e = g.get(k); e.rows.push(r); e.spell[r[field]] = (e.spell[r[field]] || 0) + 1;
-  }
-  return [...g.values()].map(e => ({label: Object.entries(e.spell).sort((a, b) => b[1] - a[1])[0][0], rows: e.rows}));
-}
-function sums(rs) {
-  const t = {Teori: 0, Tarti: 0, Kuru: 0};
-  for (const r of rs) { t.Teori += r.Teori; t.Tarti += r.Tarti; t.Kuru += r.Kuru; }
-  t.Fark = t.Kuru - t.Teori; t.Yuzde = pct(t.Fark, t.Teori); return t;
-}
-function consView(rs, view) {
-  if (view === 'malzeme') return groupBy(rs, 'StdMalzeme', true).map(g => Object.assign({Malzeme: g.label, Grup: g.rows[0].Grup}, sums(g.rows))).sort((a, b) => Math.abs(b.Kuru) - Math.abs(a.Kuru));
-  if (view === 'karisim') return groupBy(rs, 'StdFormul', true).map(g => Object.assign({Formul: g.label, Urun: g.rows[0].Urun, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => b.M3 - a.M3);
-  if (view === 'gun') return groupBy(rs, 'Tarih', false).map(g => Object.assign({Tarih: g.label, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => a.Tarih.localeCompare(b.Tarih));
-  return groupBy(rs, 'Santral', false).map(g => Object.assign({Santral: g.label, M3: m3Once(g.rows)}, sums(g.rows))).sort((a, b) => a.Santral.localeCompare(b.Santral));
-}
+function by(rs, field) { const g = new Map(); for (const r of rs) { if (!g.has(r[field])) g.set(r[field], []); g.get(r[field]).push(r); } return g; }
 
 function renderTD() {
   const sec = $('#t-td'), all = consRows();
@@ -387,19 +362,21 @@ function renderTD() {
   const plants = [...new Set(all.map(r => r.Santral))].sort();
   if (!sec.dataset.ready) {
     sec.innerHTML =
-      '<div class="srcbar">Source: <a href="https://docs.google.com/spreadsheets/d/1KTGfLyml5Yk24OmU6R6Kut2MILZ-Urz4WHTfjXvMB1k/edit?gid=1273815793#gid=1273815793" target="_blank" rel="noopener">NCM_Material_Report (Google Sheet) ↗</a></div>' +
+      '<div class="srcbar">Source: <a href="https://docs.google.com/spreadsheets/d/1KTGfLyml5Yk24OmU6R6Kut2MILZ-Urz4WHTfjXvMB1k/edit?gid=555000444#gid=555000444" target="_blank" rel="noopener">NCM_Material_Report · Mix Theory vs Dry (Google Sheet) ↗</a></div>' +
+      '<h2 style="margin-top:4px">Mix Theory vs Dry Real</h2>' +
       '<div class="tools" id="cPlants"></div>' +
       '<div class="tools"><label class="fl">From <input type="date" id="cFrom"></label><label class="fl">To <input type="date" id="cTo"></label>' +
       '<button class="btn ghost" data-rng="today">Today</button><button class="btn ghost" data-rng="month">This month</button><button class="btn ghost" data-rng="last">Last month</button></div>' +
+      '<div class="tools"><label class="fl">Design Mix <select id="cMix"></select></label><span class="note" id="cCount"></span></div>' +
       '<div class="grid" id="cKpis"></div>' +
-      '<div class="tools"><select id="cView">' + TK_VIEWS.map(v => '<option value="' + v[0] + '">' + v[1] + '</option>').join('') + '</select>' +
-      '<input type="search" id="cQ" placeholder="Search…"><span class="note" id="cCount"></span></div>' +
-      '<div class="tw"><table id="cTable"></table></div>';
+      '<div class="tw"><table id="cTable"></table></div>' +
+      '<h2>Mixes with the biggest difference</h2><div class="tw"><table id="cMixes"></table></div>' +
+      '<p class="note">Mix Theory = m³ in the plant reports × the approved mix design (sheet tab "Mix Designs"). ' +
+      'Difference = Mix Theory − Dry Real. ICE is in Dry Real only: the designs count it inside Water.</p>';
     sec.dataset.ready = '1';
     $('#cFrom').onchange = e => { CF.from = e.target.value; drawCons(); };
     $('#cTo').onchange = e => { CF.to = e.target.value; drawCons(); };
-    $('#cView').onchange = e => { CF.view = e.target.value; CSORT = null; drawCons(); };
-    $('#cQ').oninput = e => { CF.q = e.target.value.trim().toLowerCase(); drawCons(); };
+    $('#cMix').onchange = e => { CF.mix = e.target.value; drawCons(); };
     sec.querySelectorAll('[data-rng]').forEach(b => b.onclick = () => {
       const t = localDay();
       if (b.dataset.rng === 'today') CF.from = CF.to = t;
@@ -415,39 +392,42 @@ function renderTD() {
 }
 
 function drawCons() {
-  $('#cFrom').value = CF.from; $('#cTo').value = CF.to; $('#cView').value = CF.view; $('#cQ').value = CF.q;
+  $('#cFrom').value = CF.from; $('#cTo').value = CF.to;
   const from = CF.from.replace(/-/g, ''), to = CF.to.replace(/-/g, '');
-  const rs = consRows().filter(r => (!CF.plant || r.Santral === CF.plant) && r.GunKey >= from && r.GunKey <= to);
-  const t = sums(rs), m3 = m3Once(rs);
-  const sign = (v, d) => '<span class="' + (v < 0 ? 'neg' : '') + '">' + fmt(v, d) + '</span>';
-  $('#cKpis').innerHTML = card(fmt(m3, 1), 'Concrete m³') + card(fmt(t.Teori), 'Theory kg') + card(fmt(t.Kuru), 'Dry Real kg') +
-    card(sign(t.Fark, 0), 'Difference kg') + card(sign(t.Yuzde, 2) + ' %', 'Difference %');
-  let rows = consView(rs, CF.view);
-  // the sheet has no Group / Product columns: hide text columns that are empty everywhere
-  const cols = TK_COLS[CF.view].filter(c => TK_NUM.includes(c[0]) || rows.some(r => String(r[c[0]] ?? '').trim()));
-  if (CF.q) rows = rows.filter(r => cols.some(c => String(r[c[0]] ?? '').toLowerCase().includes(CF.q)));
-  if (CSORT) {
-    const n = TK_NUM.includes(CSORT.k);
-    rows = rows.slice().sort((a, b) => { let x = a[CSORT.k], y = b[CSORT.k]; if (!n) { x = String(x); y = String(y); } return (x > y ? 1 : x < y ? -1 : 0) * CSORT.d; });
-  }
-  const cell = (r, c) => {
-    const v = r[c[0]];
-    if (!TK_NUM.includes(c[0])) return '<td>' + esc(v) + '</td>';
-    const neg = (c[0] === 'Fark' || c[0] === 'Yuzde') && v < 0;
-    return '<td class="num' + (neg ? ' neg' : '') + '">' + fmt(v, c[0] === 'Yuzde' ? 2 : c[0] === 'M3' ? 1 : 0) + '</td>';
-  };
-  const drill = CF.view === 'gun' ? 'data-cday' : CF.view === 'santral' ? 'data-cplant' : '';
-  $('#cTable').innerHTML = '<tr>' + cols.map(c => '<th class="srt' + (TK_NUM.includes(c[0]) ? ' num' : '') + '" data-k="' + c[0] + '">' + c[1] +
-      (CSORT && CSORT.k === c[0] ? (CSORT.d > 0 ? ' ▲' : ' ▼') : '') + '</th>').join('') + '</tr>' +
-    (rows.length ? rows.map(r => '<tr' + (drill ? ' class="clk" ' + drill + '="' + esc(r[cols[0][0]]) + '"' : '') + '>' + cols.map(c => cell(r, c)).join('') + '</tr>').join('')
-      : '<tr><td colspan="' + cols.length + '" class="note">No production in this range.</td></tr>');
-  $('#cCount').textContent = rows.length + ' rows · ' + CF.from + ' → ' + CF.to + (CF.plant ? ' · ' + CF.plant : '');
-  $('#cTable').querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
-    const k = th.dataset.k; CSORT = CSORT && CSORT.k === k ? {k, d: -CSORT.d} : {k, d: TK_NUM.includes(k) ? -1 : 1}; drawCons();
-  });
-  // drill down: a day row -> that day; a plant row -> that plant
-  $('#cTable').querySelectorAll('[data-cday]').forEach(tr => tr.onclick = () => { CF.from = CF.to = tr.dataset.cday; CF.view = 'malzeme'; CSORT = null; drawCons(); });
-  $('#cTable').querySelectorAll('[data-cplant]').forEach(tr => tr.onclick = () => { CF.plant = tr.dataset.cplant; CF.view = 'malzeme'; CSORT = null; renderTD(); });
+  const inRange = consRows().filter(r => (!CF.plant || r.Santral === CF.plant) && r.GunKey >= from && r.GunKey <= to);
+  // Design Mix list follows the plant + dates, like the sheet's dropdown
+  const mixes = [...new Set(inRange.map(r => r.StdFormul))].sort();
+  if (CF.mix && !mixes.includes(CF.mix)) CF.mix = '';
+  $('#cMix').innerHTML = '<option value="">All</option>' + mixes.map(m => '<option' + (m === CF.mix ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+  const rs = inRange.filter(r => !CF.mix || r.StdFormul === CF.mix);
+  const sum = (xs, k) => xs.reduce((a, r) => a + (r[k] || 0), 0);
+  const mt = sum(rs, 'MixT'), dry = sum(rs, 'Kuru'), diff = mt - dry;
+  const sign = (v, d) => '<span class="' + (v < 0 ? 'neg' : '') + '">' + (v > 0 ? '+' : '') + fmt(v, d) + '</span>';
+  $('#cKpis').innerHTML = card(fmt(m3Once(rs), 1), 'Concrete m³') + card(fmt(mt), 'Mix Theory kg') + card(fmt(dry), 'Dry Real kg') +
+    card(sign(diff, 0), 'Difference (Mix − Dry)') + card(sign(pct(diff, mt), 2) + ' %', 'Difference %');
+  // one line per Standard Material (all materials seen in the period, like the sheet)
+  const mats = [...new Set(inRange.map(r => r.StdMalzeme))].sort((a, b) => a.localeCompare(b));
+  const g = by(rs, 'StdMalzeme');
+  const lines = mats.map(m => { const xs = g.get(m) || []; const a = sum(xs, 'MixT'), b = sum(xs, 'Kuru'); return {m, a, b, d: a - b}; });
+  const dcell = (v, d) => '<td class="num' + (v < 0 ? ' neg' : '') + '">' + (v > 0 ? '+' : '') + fmt(v, d) + '</td>';
+  $('#cTable').innerHTML = '<tr><th>No.</th><th>Standard Material</th><th class="num">Mix Theory QTY</th><th class="num">Dry Real QTY</th><th class="num">Difference (Mix − Dry)</th><th class="num">Difference %</th></tr>' +
+    lines.map((x, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(x.m) + '</td><td class="num">' + fmt(x.a, 2) + '</td><td class="num">' + fmt(x.b, 2) + '</td>' +
+      dcell(x.d, 2) + (x.a ? dcell(pct(x.d, x.a), 2).replace('</td>', ' %</td>') : '<td class="num"></td>') + '</tr>').join('') +
+    '<tfoot><tr><td></td><td>GRAND TOTAL</td><td class="num">' + fmt(mt, 2) + '</td><td class="num">' + fmt(dry, 2) + '</td>' + dcell(diff, 2) +
+    dcell(pct(diff, mt), 2).replace('</td>', ' %</td>') + '</tr></tfoot>';
+  // mixes with the biggest difference (top 5), "mostly from" = biggest material difference without Water / ICE
+  const top = [...by(rs, 'StdFormul')].map(([f, xs]) => {
+    const a = sum(xs, 'MixT'), d = a - sum(xs, 'Kuru');
+    const per = [...by(xs.filter(r => !/^(water|ice)$/i.test(r.StdMalzeme)), 'StdMalzeme')].map(([m, ys]) => [m, sum(ys, 'MixT') - sum(ys, 'Kuru')])
+      .sort((p, q) => Math.abs(q[1]) - Math.abs(p[1]))[0] || ['', 0];
+    return {f, d, p: pct(d, a), mm: per[0], md: per[1]};
+  }).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 5);
+  $('#cMixes').innerHTML = '<tr><th>Design Mix</th><th class="num">Difference</th><th class="num">%</th><th>Mostly from</th></tr>' +
+    (top.length ? top.map(x => '<tr class="clk" data-cmix="' + esc(x.f) + '"><td>' + esc(x.f) + '</td>' + dcell(x.d, 0) + dcell(x.p, 2).replace('</td>', ' %</td>') +
+      '<td>' + esc(x.mm) + ' <span class="' + (x.md < 0 ? 'neg' : '') + '">' + (x.md > 0 ? '+' : '') + fmt(x.md, 0) + '</span></td></tr>').join('')
+      : '<tr><td colspan="4" class="note">No production in this range.</td></tr>');
+  $('#cMixes').querySelectorAll('[data-cmix]').forEach(tr => tr.onclick = () => { CF.mix = tr.dataset.cmix; drawCons(); window.scrollTo(0, 0); });
+  $('#cCount').textContent = CF.from + ' → ' + CF.to + (CF.plant ? ' · ' + CF.plant : ' · all plants') + (CF.mix ? ' · ' + CF.mix : '');
 }
 
 // restore last tab + saved password
