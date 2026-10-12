@@ -18,13 +18,14 @@
 .np *{box-sizing:border-box}
 .np-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .np-top h3{margin:0;font-size:17px;flex:1;min-width:180px}
-.np-btn{display:inline-flex;align-items:center;gap:6px;background:#2457d6;color:#fff!important;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;text-decoration:none;cursor:pointer}
+.np-btn{display:inline-flex;align-items:center;gap:6px;background:#006ca8;color:#fff!important;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;text-decoration:none;cursor:pointer}
 .np-btn.ghost{background:transparent;color:inherit!important;border:1px solid rgba(128,128,128,.35)}
 .np-tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid rgba(128,128,128,.25);margin-bottom:14px}
 .np-tab{background:none;border:0;border-bottom:3px solid transparent;padding:9px 14px;font:inherit;font-weight:700;font-size:14px;color:inherit;opacity:.6;cursor:pointer}
-.np-tab.on{opacity:1;border-bottom-color:#2457d6;color:#2457d6}
+.np-tab.on{opacity:1;border-bottom-color:#006ca8;color:#006ca8}
 .np-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
-.np-k{border:1px solid rgba(128,128,128,.25);border-radius:12px;padding:11px 13px;background:rgba(128,128,128,.06)}
+.np-k:nth-child(even){border-top-color:#24a854}
+.np-k{border:1px solid rgba(128,128,128,.25);border-top:3px solid #006ca8;border-radius:12px;padding:11px 13px;background:rgba(128,128,128,.06)}
 .np-k b{display:block;font-size:21px;font-variant-numeric:tabular-nums}
 .np-k span{font-size:11.5px;opacity:.7}
 .np-f{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
@@ -34,13 +35,13 @@
 .np h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;opacity:.65;margin:16px 0 8px}
 .np-tw{overflow:auto;border:1px solid rgba(128,128,128,.25);border-radius:12px;max-height:calc(100vh - 340px);min-height:180px}
 .np table{width:100%;border-collapse:collapse;font-size:13.5px}
-.np th{position:sticky;top:0;background:#2457d6;color:#fff;text-align:left;padding:9px 12px;font-size:12px;white-space:nowrap;z-index:1}
+.np th{position:sticky;top:0;background:#006ca8;color:#fff;text-align:left;padding:9px 12px;font-size:12px;white-space:nowrap;z-index:1}
 .np th.num,.np td.num{text-align:right;font-variant-numeric:tabular-nums}
 .np td{padding:8px 12px;border-bottom:1px solid rgba(128,128,128,.18);white-space:nowrap}
 .np tr:nth-child(even) td{background:rgba(128,128,128,.05)}
-.np tr.dep td{background:rgba(36,87,214,.08);font-weight:700}
+.np tr.dep td{background:rgba(0,108,168,.08);font-weight:700}
 .np tfoot td{font-weight:700;background:rgba(128,128,128,.10)}
-.np .bar{display:inline-block;height:7px;border-radius:4px;background:#2457d6;vertical-align:middle;margin-right:8px}
+.np .bar{display:inline-block;height:7px;border-radius:4px;background:#006ca8;vertical-align:middle;margin-right:8px}
 .np .ty{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}
 .np .ty.w{background:#e0f2fe;color:#075985}.np .ty.b{background:#ede9fe;color:#5b21b6}
 .np .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}

@@ -13,8 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="NCM Hub">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-:root{--bg:#f4f6fa;--card:#fff;--txt:#0f172a;--mut:#64748b;--line:#e5e9f0;--acc:#2457d6;--ok:#15803d;--bad:#c0352b;--bar:#2457d6;--soft:#eef2fb}
-@media (prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--txt:#e2e8f0;--mut:#94a3b8;--line:#334155;--acc:#7aa2ff;--bar:#5b85f0;--soft:#24314a}}
+:root{--bg:#f3f6f9;--card:#fff;--txt:#14212e;--mut:#6b7785;--line:#e1e7ee;--acc:#006ca8;--acc2:#24a854;--ok:#1d8f47;--bad:#c0352b;--bar:#006ca8;--soft:#e8f2f9}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1823;--card:#152536;--txt:#e3eaf1;--mut:#9aa8b6;--line:#26394c;--acc:#3a9bd9;--acc2:#3cc26c;--ok:#3cc26c;--bar:#3a9bd9;--soft:#1b3247}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 button,select,input{font:inherit;color:inherit}
@@ -32,12 +32,12 @@ button,select,input{font:inherit;color:inherit}
 /* app */
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
 /* NCM brand bar - same as the Manpower page: white, logo left, green rule */
-.topbar{background:#fff;border-bottom:3px solid #34a853;padding:10px 16px}
+.topbar{background:#fff;border-bottom:3px solid #24a854;padding:10px 16px}
 .topbar .tb{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1200px;margin:0 auto}
 .topbar img{height:40px;width:auto;display:block}
 .topbar span{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7785}
 @media (max-width:600px){.topbar img{height:32px}.topbar span{display:none}}
-.lock-logo{background:#fff;border-radius:12px;padding:12px;margin:-6px -4px 18px;border-bottom:3px solid #34a853;text-align:center}
+.lock-logo{background:#fff;border-radius:12px;padding:12px;margin:-6px -4px 18px;border-bottom:3px solid #24a854;text-align:center}
 .lock-logo img{height:48px;max-width:100%}
 /* left sidebar with the tabs; on phones it slides in from the left behind the ☰ button */
 .layout{display:flex;align-items:flex-start}
@@ -48,7 +48,7 @@ nav#tabs button{display:flex;align-items:center;gap:10px;width:100%;text-align:l
   padding:10px 12px;cursor:pointer;color:var(--mut);font-weight:600;font-size:14px}
 nav#tabs button i{font-style:normal;width:22px;text-align:center}
 nav#tabs button:hover{background:var(--soft);color:var(--txt)}
-nav#tabs button.on{background:var(--acc);color:#fff}
+nav#tabs button.on{background:var(--acc);color:#fff;box-shadow:inset 4px 0 0 var(--acc2)}
 .side-f{margin-top:auto;padding:12px 4px 0;border-top:1px solid var(--line)}
 .side-f small{display:block;color:var(--mut);font-size:12px;margin-bottom:8px}
 .side-b{display:flex;gap:6px}.side-b .btn{flex:1;padding:8px 10px;font-size:13px}
@@ -101,6 +101,10 @@ th.srt:hover{color:var(--acc)}
 .tools .btn{padding:7px 13px;font-size:13px}
 .share{display:inline-block;width:48px;height:6px;border-radius:3px;background:var(--soft);margin-right:6px;vertical-align:middle;overflow:hidden}
 .share i{display:block;height:100%;background:var(--bar)}
+/* brand accents: blue + green from the NCM logo */
+.grid .card{border-top:3px solid var(--acc)}
+.grid .card:nth-child(even){border-top-color:var(--acc2)}
+main h2{color:var(--acc)}
 .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
 .links a:hover{border-color:var(--acc)}
