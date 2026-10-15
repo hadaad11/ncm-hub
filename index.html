@@ -230,6 +230,13 @@ iframe{border-radius:var(--radius);box-shadow:var(--shadow)}
 </div>
 
 <script src="maint.js"></script>
+<script src="grease.js"></script>
+<script>
+// Grease consumption = extra Maintenance sub-tab, drawn from the encrypted hub data
+window.NCM_MAINT_EXTRA = {grease: {label: '🛢️ Grease Consumption',
+  edit: 'https://docs.google.com/spreadsheets/d/1H1_h2rRNzk9jv2ufhYhnnACj_Hb_3VLz/edit',
+  render: body => ncmGrease(body, (typeof D !== 'undefined' && D) ? D.grease : null)}};
+</script>
 <script src="cement.js"></script>
 <script src="manpower.js"></script>
 <script>

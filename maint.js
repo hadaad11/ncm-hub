@@ -174,17 +174,22 @@
     if (!document.getElementById('nm-css')) {
       const s = document.createElement('style'); s.id = 'nm-css'; s.textContent = CSS; document.head.appendChild(s);
     }
-    tab = TABS[tab] ? tab : (host.dataset.nmTab || 'work');
+    // a page can add its own sub-tabs: window.NCM_MAINT_EXTRA = {key: {label, edit, render(body)}}
+    const EXTRA = window.NCM_MAINT_EXTRA || {};
+    const ALL = Object.assign({}, TABS, EXTRA);
+    tab = ALL[tab] ? tab : (host.dataset.nmTab || 'work');
     host.dataset.nmTab = tab;
+    const edit = EXTRA[tab] ? EXTRA[tab].edit : editUrl(TABS[tab].gid);
     host.innerHTML = `<div class="nm">
       <div class="nm-top"><h3>Plant Maintenance & Spare Parts</h3>
-        <a class="nm-btn" target="_blank" rel="noopener" href="${editUrl(TABS[tab].gid)}">Open the sheet ↗</a>
+        <a class="nm-btn" target="_blank" rel="noopener" href="${edit}">Open the sheet ↗</a>
         <button class="nm-btn ghost" data-a="reload">↻ Refresh</button></div>
-      <div class="nm-tabs">${Object.entries(TABS).map(([k, t]) => `<button class="nm-tab${k === tab ? ' on' : ''}" data-t="${k}">${t.label}</button>`).join('')}</div>
+      <div class="nm-tabs">${Object.entries(ALL).map(([k, t]) => `<button class="nm-tab${k === tab ? ' on' : ''}" data-t="${k}">${t.label}</button>`).join('')}</div>
       <div data-a="body"><div class="nm-msg">Loading…</div></div></div>`;
     host.querySelectorAll('.nm-tab').forEach(b => b.onclick = () => window.ncmMaint(host, b.dataset.t));
     host.querySelector('[data-a=reload]').onclick = () => window.ncmMaint(host, tab);
     const body = host.querySelector('[data-a=body]');
+    if (EXTRA[tab]) { try { await EXTRA[tab].render(body); } catch (e) { body.innerHTML = '<div class="nm-msg">Could not show this tab.</div>'; } return; }
     try {
       const rows = await load(TABS[tab].gid);
       (tab === 'parts' ? partsView : workView)(body, rows);
