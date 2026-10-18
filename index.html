@@ -206,6 +206,7 @@ iframe{border-radius:var(--radius);box-shadow:var(--shadow)}
       <button data-t="ice"><i>🧊</i>Ice Calculate</button>
       <button data-t="maintenance"><i>🔧</i>Maintenance</button>
       <button data-t="manpower"><i>👷</i>Manpower</button>
+      <button data-t="monitor"><i>📡</i>System Monitor</button>
     </nav>
     <div class="side-f">
       <small id="updated"></small>
@@ -223,6 +224,7 @@ iframe{border-radius:var(--radius);box-shadow:var(--shadow)}
     <section id="t-pour" class="hidden"><iframe data-src="https://hadaad11.github.io/pourtracker-/" title="Pour Tracker"></iframe></section>
     <section id="t-manpower" class="hidden"><div class="card" id="mp"></div></section>
     <section id="t-ice" class="hidden"><iframe data-src="https://elkady591.github.io/Ice-Calculator/" title="Ice Calculator"></iframe></section>
+    <section id="t-monitor" class="hidden"><div class="srcbar">Snapshot from the server every 5 minutes · live (every 10 s) inside the office: <a href="http://192.168.1.128:8812" target="_blank" rel="noopener">192.168.1.128:8812 ↗</a> · through Tailscale: <a href="http://100.73.12.26:8812" target="_blank" rel="noopener">100.73.12.26:8812 ↗</a></div><iframe data-src="monitor.html" title="System Monitor" style="background:#040912"></iframe></section>
     <section id="t-maintenance" class="hidden"><div class="card" id="maint"></div></section>
     </div>
   </main>
@@ -246,6 +248,8 @@ const DATA_URL = new URLSearchParams(location.search).has('local') ? 'data.enc'
   : 'https://raw.githubusercontent.com/hadaad11/ncm-hub/refs/heads/data/data.enc';
 const KEY = 'ncm-hub-pw';
 let D = null, PW = null;
+// the System Monitor tab (an iframe) reads the server's snapshot through this
+Object.defineProperty(window, 'HUB', {get: () => D});
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -412,7 +416,8 @@ const HERO = {plants: ['Plant Quantity', 'Production by plant, live from the pla
   td: ['Consumption', 'Mix Theory vs Dry Real, from the material report sheet'],
   cement: ['Cement Tracking', 'Silo aging, balance and filling priority'],
   pour: ['Pour Tracker', 'Pours and plans'], ice: ['Ice Calculate', 'Ice quantities for the mixes'],
-  maintenance: ['Maintenance', 'Work done and missing spare parts'], manpower: ['Manpower', 'Staff, shifts and departments']};
+  maintenance: ['Maintenance', 'Work done, missing spare parts and grease'], manpower: ['Manpower', 'Staff, shifts and departments'],
+  monitor: ['System Monitor', 'Server, NCM PLANTS and plant PCs: are they up?']};
 function hero(k) { const h = HERO[k] || HERO.plants; $('#heroTitle').textContent = h[0]; $('#heroSub').textContent = h[1]; }
 /* numbers count up when a card appears (KPI cards here and in the sheet views) */
 function countUp(el) {
