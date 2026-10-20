@@ -3,214 +3,282 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NCM Monitor</title>
+<title>NCM System Monitor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#040912;--panel:rgba(10,22,40,.78);--line:rgba(120,170,255,.16);--txt:#dbe7f7;--mut:#7f93ad;
-  --ok:#2ff59a;--slow:#ffcc3d;--down:#ff3d5a;--blue:#2f8cff;--green:#24a854}
+:root{--bg:#f3f5f9;--card:#fff;--surface2:#f7f9fc;--txt:#0f1b2d;--mut:#8a96a6;--ink2:#4b5869;--line:#e6eaf0;
+  --brand:#0f2748;--brand2:#1d4a85;--gold:#c9a13b;--ok:#24a854;--slow:#d79a1e;--down:#d0392f;--none:#a8b3c2;
+  --okbg:#e7f6ec;--slowbg:#fbf3de;--downbg:#fbe9e7;--shadow:0 1px 2px rgba(15,27,45,.05),0 6px 20px rgba(15,27,45,.06);--radius:14px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2c;--surface2:#172236;--txt:#e8edf5;--mut:#6f7d91;--ink2:#a7b3c4;--line:#223049;
+  --okbg:#14301f;--slowbg:#2a2414;--downbg:#341a19;--none:#4a5a70;--shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25)}}
+:root[data-theme="dark"]{--bg:#0b1220;--card:#121b2c;--surface2:#172236;--txt:#e8edf5;--mut:#6f7d91;--ink2:#a7b3c4;--line:#223049;
+  --okbg:#14301f;--slowbg:#2a2414;--downbg:#341a19;--none:#4a5a70;--shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25)}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;overflow:hidden}
-#c{position:fixed;inset:0;width:100%;height:100%;display:block}
-.top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;z-index:3;
-  background:linear-gradient(180deg,rgba(4,9,18,.95),rgba(4,9,18,0))}
-.top img{height:30px;background:#fff;border-radius:7px;padding:3px 6px}
-.top h1{font-size:16px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
-.top h1 span{color:var(--ok);text-shadow:0 0 12px var(--ok)}
-.top .sp{flex:1}
-.pill{font:600 12px 'JetBrains Mono',monospace;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
-.pill b.ok{color:var(--ok)}.pill b.slow{color:var(--slow)}.pill b.down{color:var(--down)}
-button.fs{font:600 12px Inter;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px 11px;cursor:pointer}
-.side{position:fixed;right:14px;top:62px;bottom:14px;width:320px;display:flex;flex-direction:column;gap:12px;z-index:3;overflow:auto;scrollbar-width:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;backdrop-filter:blur(10px)}
-.card h3{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
-.m{display:flex;justify-content:space-between;font:500 12.5px 'JetBrains Mono',monospace;margin:7px 0 4px}
-.bar{height:6px;border-radius:9px;background:rgba(255,255,255,.07);overflow:hidden}
-.bar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--blue),var(--ok));box-shadow:0 0 10px var(--ok);transition:width .6s}
-.bar i.hot{background:linear-gradient(90deg,var(--slow),var(--down));box-shadow:0 0 10px var(--down)}
-.al{font-size:12px;padding:7px 0;border-top:1px solid var(--line)}.al:first-of-type{border-top:0}
-.al small{display:block;color:var(--mut);font:500 10.5px 'JetBrains Mono',monospace}
-.pred{font-size:12.5px;padding:6px 0;border-top:1px solid var(--line)}.pred:first-of-type{border-top:0}
+html,body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+/* header */
+.hero{position:relative;overflow:hidden;color:#fff;padding:22px 24px 74px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand2) 100%)}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:230px;height:230px;border-radius:50%;border:28px solid rgba(52,168,83,.16)}
+.hero::before{content:"";position:absolute;left:40%;bottom:-90px;width:180px;height:180px;border-radius:50%;border:20px solid rgba(201,161,59,.12)}
+.hrow{position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hrow img{height:38px;background:#fff;border-radius:9px;padding:4px 8px}
+.hrow small{display:block;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.62);font-weight:600}
+.hrow h1{font-size:23px;font-weight:800;letter-spacing:-.4px}
+.sp{flex:1}
+.state{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+.state i{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(36,168,84,.25);animation:beat 1.6s infinite}
+.state.bad i{background:var(--down);box-shadow:0 0 0 4px rgba(208,57,47,.3)}
+.state.warn i{background:var(--gold);box-shadow:0 0 0 4px rgba(201,161,59,.3)}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.btn{font:600 12.5px Inter,sans-serif;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:8px 12px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.2)}
+.sub{position:relative;z-index:1;margin-top:8px;color:rgba(255,255,255,.72);font-size:13px}
+/* layout */
+.wrap{margin:-52px 18px 26px;position:relative;z-index:2;display:flex;flex-direction:column;gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;min-width:0}
+.kpi{border-top:3px solid var(--brand2)}
+.kpi small{display:block;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+.kpi b{display:block;font-size:26px;font-weight:800;letter-spacing:-.6px;margin-top:4px}
+.kpi span{font-size:12px;color:var(--ink2)}
+.kpi.ok{border-top-color:var(--ok)}.kpi.ok b{color:var(--ok)}
+.kpi.slow{border-top-color:var(--gold)}.kpi.slow b{color:var(--slow)}
+.kpi.down{border-top-color:var(--down)}.kpi.down b{color:var(--down)}
+.main{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+h3{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+h3 em{font-style:normal;font-weight:600;color:var(--mut);text-transform:none;letter-spacing:0}
+/* map */
+#map{width:100%;height:auto;display:block}
+#map .lk{fill:none;stroke-width:2;stroke-linecap:round}
+#map .lk.ok{stroke:var(--ok);stroke-opacity:.55;stroke-dasharray:3 9;animation:flow 1.4s linear infinite}
+#map .lk.slow{stroke:var(--gold);stroke-opacity:.8;stroke-dasharray:3 9;animation:flow 3.2s linear infinite}
+#map .lk.down{stroke:var(--down);stroke-dasharray:7 6;stroke-opacity:.9}
+#map .lk.none{stroke:var(--none);stroke-opacity:.5}
+#map .base{fill:none;stroke:var(--line);stroke-width:5;stroke-linecap:round}
+@keyframes flow{to{stroke-dashoffset:-24}}
+#map .nd circle.face{fill:var(--card);stroke-width:2.5}
+#map .nd .ring{fill:none;stroke-width:2;opacity:.0;transform-box:fill-box;transform-origin:center}
+#map .nd.down .ring,#map .nd.slow .ring{animation:ring 1.8s ease-out infinite}
+@keyframes ring{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.9)}}
+#map .nd text{font-family:Inter,sans-serif;fill:var(--txt)}
+#map .nd .lab{font-size:12.5px;font-weight:700}
+#map .nd .val{font-size:10.5px;font-family:'JetBrains Mono',monospace;fill:var(--mut)}
+#map .nd.down .val{fill:var(--down);font-weight:700}
+#map .nd .ic{font-size:15px;text-anchor:middle;dominant-baseline:central}
+#map .colh{font-size:10.5px;font-weight:700;letter-spacing:1.2px;fill:var(--mut);text-anchor:middle}
+#map .nd{cursor:default}
+/* bars */
+.m{display:flex;justify-content:space-between;font-size:12.5px;margin:10px 0 5px;color:var(--ink2)}
+.m b{color:var(--txt);font-weight:700}
+.bar{height:8px;border-radius:9px;background:var(--surface2);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--brand2),var(--ok));transition:width .6s}
+.bar i.warm{background:linear-gradient(90deg,var(--gold),#e0b84a)}.bar i.hot{background:linear-gradient(90deg,#e46b3c,var(--down))}
+/* lists */
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.ok{color:var(--ok);background:var(--okbg)}.chip.slow{color:var(--slow);background:var(--slowbg)}.chip.down{color:var(--down);background:var(--downbg)}.chip.none{color:var(--mut);background:var(--surface2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);padding:0 8px 8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td .s{display:block;font-size:11.5px;color:var(--mut);margin-top:2px}
+.pl{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;font-weight:800;font-size:13px;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand2))}
+.rows .r{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.rows .r:first-child{border-top:0}
+.rows .r .t{flex:1;min-width:0}.rows .r .t small{display:block;color:var(--mut);font-size:11.5px;margin-top:1px}
+.ev{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px}
+.ev:first-child{border-top:0}
+.ev i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--ok)}
+.ev.bad i{background:var(--down)}
+.ev small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.empty{color:var(--mut);font-size:13px}
+.pred{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.pred:first-of-type{border-top:0}
 .pred b{color:var(--slow)}
-#tip{position:fixed;z-index:4;pointer-events:none;background:rgba(8,18,34,.95);border:1px solid var(--line);border-radius:12px;padding:10px 12px;
-  font-size:12.5px;min-width:190px;display:none;box-shadow:0 10px 40px rgba(0,0,0,.5)}
-#tip b{font-size:14px}#tip .s{font:700 11px 'JetBrains Mono',monospace;text-transform:uppercase}
-#tip .r{color:var(--mut);font:500 11.5px 'JetBrains Mono',monospace;margin-top:4px}
-.legend{position:fixed;left:16px;bottom:14px;z-index:3;display:flex;gap:14px;font:600 11.5px Inter;color:var(--mut)}
-.legend i{display:inline-block;width:18px;height:3px;border-radius:3px;vertical-align:middle;margin-right:6px}
-@media (max-width:820px){
-  html,body{overflow:auto}
-  #c{position:relative;height:62vh}
-  .side{position:relative;right:auto;top:auto;bottom:auto;width:auto;margin:0 10px 18px;overflow:visible}
-  .legend{position:relative;left:auto;bottom:auto;margin:6px 12px 10px;flex-wrap:wrap}
-  .top{position:relative;background:none}
-}
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+#tip{position:fixed;z-index:9;pointer-events:none;background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;min-width:200px;display:none;box-shadow:0 12px 36px rgba(0,0,0,.18)}
+#tip b{font-size:14px}#tip div{color:var(--ink2);margin-top:3px;font-size:12px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.main,.two{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.hero{padding:18px 16px 70px}.wrap{margin:-50px 10px 20px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi b{font-size:22px}
+  .mapcard{overflow-x:auto}#map{min-width:640px}
+  .hrow h1{font-size:19px}.hide-s{display:none}table{font-size:12px}td{padding:9px 5px}}
 </style>
 </head>
 <body>
-<div class="top"><img src="ncm-logo.png" alt="NCM"><h1>NCM <span>Monitor</span></h1><span class="sp"></span>
-  <span class="pill" id="sum">…</span><span class="pill" id="clock">--:--:--</span><a class="fs" id="live" href="http://192.168.1.128:8812" target="_blank" rel="noopener" style="text-decoration:none">⚡ Live</a><button class="fs" id="fs">⛶ Full screen</button></div>
-<canvas id="c"></canvas>
-<div class="side">
-  <div class="card" id="srv"><h3>Server</h3></div>
-  <div class="card" id="pred"><h3>Forecast</h3></div>
-  <div class="card" id="alerts"><h3>Alerts</h3></div>
-</div>
-<div class="legend"><span><i style="background:var(--ok)"></i>OK</span><span><i style="background:var(--slow)"></i>Slow</span><span><i style="background:var(--down)"></i>Down</span></div>
+<header class="hero">
+  <div class="hrow">
+    <img src="ncm-logo.png" alt="NCM">
+    <div><small>NCM · Server &amp; plants</small><h1>System Monitor</h1></div>
+    <span class="sp"></span>
+    <span class="state" id="state"><i></i><span>Checking…</span></span>
+    <a class="btn" id="live" href="http://192.168.1.128:8812" target="_blank" rel="noopener">⚡ Live</a>
+    <button class="btn hide-s" id="fs">⛶ Full screen</button>
+  </div>
+  <p class="sub" id="sub">Loading…</p>
+</header>
+
+<main class="wrap">
+  <section class="kpis">
+    <div class="card kpi ok"><small>Online</small><b id="k-ok">–</b><span id="k-ok-s"></span></div>
+    <div class="card kpi slow"><small>Slow</small><b id="k-slow">–</b><span>answering late</span></div>
+    <div class="card kpi down"><small>Down</small><b id="k-down">–</b><span>not answering</span></div>
+    <div class="card kpi"><small>Server CPU</small><b id="k-cpu">–</b><span id="k-host"></span></div>
+    <div class="card kpi"><small>Server RAM</small><b id="k-ram">–</b><span id="k-ram-s"></span></div>
+    <div class="card kpi"><small>Uptime</small><b id="k-up">–</b><span>since last start</span></div>
+  </section>
+
+  <section class="main">
+    <div class="card mapcard">
+      <h3>🛰️ Network map <em id="mapnote"></em></h3>
+      <svg id="map" viewBox="0 0 1000 520" role="img" aria-label="Network map of the NCM server and plants"></svg>
+    </div>
+    <div class="col">
+      <div class="card" id="srv"><h3>🖥️ Server</h3></div>
+      <div class="card" id="pred"><h3>🔮 Forecast</h3></div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h3>🏭 Plants <em>PC on the network · plant database</em></h3>
+      <table><thead><tr><th>Plant</th><th>PC</th><th class="hide-s">Ping</th><th>Database</th><th class="hide-s">Response</th></tr></thead><tbody id="plants"></tbody></table>
+    </div>
+    <div class="col">
+      <div class="card"><h3>⚙️ Services &amp; jobs</h3><div class="rows" id="svc"></div></div>
+      <div class="card"><h3>🔔 Alerts <em id="tg"></em></h3><div id="alerts"></div></div>
+    </div>
+  </section>
+</main>
 <div id="tip"></div>
+
 <script>
 'use strict';
-const COL = {ok: '#2ff59a', slow: '#ffcc3d', down: '#ff3d5a', none: '#4a5d78'};
-const cv = document.getElementById('c'), cx = cv.getContext('2d');
-let S = {nodes: {}, links: [], server: {}, alerts: []}, W = 0, H = 0, DPR = 1, pos = {}, parts = [], hover = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const CSSV = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COLV = {ok: '--ok', slow: '--gold', down: '--down', none: '--none'};
+const ICON = {server: '🖥️', app: '🏭', portal: '🧭', tailscale: '🔐', internet: '🌐', hub: '📊', mail: '✉️', manpower: '👷'};
+let S = {nodes: {}, links: [], server: {}, alerts: []};
 
-function resize() {
-  DPR = Math.min(2, devicePixelRatio || 1); const r = cv.getBoundingClientRect();
-  W = r.width; H = r.height; cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0); layout();
+// ---------- map: services | server | NCM PLANTS | plant PCs | plant DBs
+function layout(nodes) {
+  const P = {server: [360, 260], app: [555, 260]};
+  const left = ['internet', 'hub', 'tailscale', 'portal', 'mail', 'manpower'].filter(k => nodes[k]);
+  left.forEach((k, i) => P[k] = [175, 60 + i * (400 / Math.max(1, left.length - 1))]);
+  const pcs = Object.keys(nodes).filter(k => k.startsWith('pc_')).sort();
+  pcs.forEach((k, i) => { const y = 60 + i * (400 / Math.max(1, pcs.length - 1)); P[k] = [740, y]; P['db_' + k.slice(3)] = [915, y]; });
+  return P;
 }
-addEventListener('resize', resize);
-
-// layout: server in the middle, services around it, plant PCs on an arc with their DB further out
-function layout() {
-  const side = W > 820 ? 340 : 0, cw = W - side, mx = cw / 2, my = H / 2 + 10, R = Math.min(cw, H) * .34;
-  pos = {server: [mx, my]};
-  const ring = (ids, a0, a1, rr) => ids.forEach((id, i) => { const a = a0 + (a1 - a0) * (ids.length === 1 ? .5 : i / (ids.length - 1)); pos[id] = [mx + Math.cos(a) * rr, my + Math.sin(a) * rr]; });
-  ring(['tailscale', 'internet', 'hub'], -2.5, -1.2, R * .78);
-  ring(['portal', 'mail', 'manpower'], -.75, .45, R * .78);
-  pos.app = [mx - R * .55, my + R * .25];
-  const pcs = Object.keys(S.nodes).filter(k => k.startsWith('pc_')).sort();
-  pcs.forEach((id, i) => {
-    const a = 1.75 + (pcs.length === 1 ? 0 : (i / (pcs.length - 1) - .5) * 1.9), cxp = pos.app[0], cyp = pos.app[1];
-    pos[id] = [cxp + Math.cos(a) * R * .72, cyp + Math.sin(a) * R * .72];
-    pos['db_' + id.slice(3)] = [cxp + Math.cos(a) * R * 1.08, cyp + Math.sin(a) * R * 1.08];
-  });
-  if (W <= 820) { // phone: keep everything inside
-    Object.keys(pos).forEach(k => { pos[k][0] = Math.max(34, Math.min(W - 34, pos[k][0])); pos[k][1] = Math.max(40, Math.min(H - 30, pos[k][1])); });
-  }
-}
-
-function linkStatus(a, b) {
+function curve(a, b) { const mx = (a[0] + b[0]) / 2; return `M${a[0]},${a[1]} C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]}`; }
+function linkSt(a, b) {
   const sa = (S.nodes[a] || {}).status, sb = (S.nodes[b] || {}).status;
-  if (sa === 'down' || sb === 'down') return 'down';
-  if (sa === 'slow' || sb === 'slow') return 'slow';
-  return sa && sb ? 'ok' : 'none';
+  return sa === 'down' || sb === 'down' ? 'down' : sa === 'slow' || sb === 'slow' ? 'slow' : sa && sb ? 'ok' : 'none';
 }
-
-// signal particles travel along the healthy links
-function spawn() {
-  for (const l of S.links) {
-    const st = linkStatus(l.a, l.b);
-    if (st === 'down' || st === 'none' || !pos[l.a] || !pos[l.b]) continue;
-    const want = st === 'ok' ? 3 : 1;
-    const have = parts.filter(p => p.l === l).length;
-    if (have < want && Math.random() < .08) parts.push({l, t: 0, v: (st === 'ok' ? .006 : .0025) * (.7 + Math.random() * .6), back: Math.random() < .35});
+function drawMap() {
+  const P = layout(S.nodes); let h = '';
+  h += `<text class="colh" x="135" y="22">SERVICES</text><text class="colh" x="360" y="22">SERVER</text><text class="colh" x="555" y="22">PLANTS APP</text>` +
+       `<text class="colh" x="740" y="22">PLANT PCs</text><text class="colh" x="915" y="22">DATABASES</text>`;
+  for (const l of S.links) { const a = P[l.a], b = P[l.b]; if (a && b) h += `<path class="base" d="${curve(a, b)}"/>`; }
+  for (const l of S.links) { const a = P[l.a], b = P[l.b]; if (a && b) h += `<path class="lk ${linkSt(l.a, l.b)}" d="${curve(a, b)}"/>`; }
+  for (const [id, n] of Object.entries(S.nodes)) {
+    const p = P[id]; if (!p) continue;
+    const st = n.status || 'none', c = `var(${COLV[st] || '--none'})`, big = id === 'server' || id === 'app', r = big ? 30 : 21;
+    const ic = ICON[id] || (n.kind === 'db' ? '🗄️' : n.kind === 'plant' ? '' : '•');
+    const pg = (/ping (\d+) ms/.exec(n.detail || '') || [])[1];
+    const val = st === 'down' ? 'DOWN' : n.kind === 'plant' && pg ? pg + ' ms' : id === 'server' ? `CPU ${Math.round(S.server.cpu || 0)}%` : n.latency ? n.latency + ' ms' : (n.kind === 'job' ? 'OK' : '');
+    const lab = n.kind === 'db' ? 'DB' : id === 'server' ? 'NCM SERVER' : n.label;
+    const below = big; // big nodes: label under, others: label beside
+    const plant = n.kind === 'plant', tx = below || plant ? p[0] : (p[0] < 300 ? p[0] - r - 10 : p[0] + r + 10), anchor = below || plant ? 'middle' : (p[0] < 300 ? 'end' : 'start');
+    const ty = below ? p[1] + r + 18 : p[1] - 2;
+    h += `<g class="nd ${st}" data-id="${esc(id)}">` +
+      `<circle class="ring" cx="${p[0]}" cy="${p[1]}" r="${r}" style="stroke:${c}"/>` +
+      `<circle class="face" cx="${p[0]}" cy="${p[1]}" r="${r}" style="stroke:${c}"/>` +
+      (ic ? `<text class="ic" x="${p[0]}" y="${p[1] + 1}">${ic}</text>` : `<text class="ic" x="${p[0]}" y="${p[1] + 1}" style="font-weight:800;font-size:13px;fill:${c}">${esc(n.label)}</text>`) +
+      (n.kind === 'plant' && !below ? '' : `<text class="lab" x="${tx}" y="${ty}" text-anchor="${anchor}">${esc(lab)}</text>`) +
+      (val ? `<text class="val" x="${tx}" y="${below ? ty + 14 : plant ? p[1] + r + 15 : ty + 14}" text-anchor="${anchor}">${esc(val)}</text>` : '') +
+      `</g>`;
   }
+  $('map').innerHTML = h;
 }
 
-function drawNode(id, n, t) {
-  const p = pos[id]; if (!p) return;
-  const st = n.status || 'none', c = COL[st], big = id === 'server', r = big ? 30 : n.kind === 'db' ? 13 : n.kind === 'plant' ? 19 : 16;
-  const pulse = st === 'down' ? (Math.sin(t / 180) + 1) / 2 : (Math.sin(t / 900 + p[0]) + 1) / 2;
-  cx.save();
-  cx.shadowColor = c; cx.shadowBlur = big ? 40 : 22 + pulse * 14;
-  cx.fillStyle = 'rgba(6,14,28,.95)'; cx.strokeStyle = c; cx.lineWidth = big ? 3 : 2;
-  cx.beginPath(); cx.arc(p[0], p[1], r, 0, 7); cx.fill(); cx.stroke();
-  cx.globalAlpha = .25 + pulse * .35; cx.beginPath(); cx.arc(p[0], p[1], r + 6 + pulse * 5, 0, 7); cx.stroke(); cx.globalAlpha = 1;
-  cx.shadowBlur = 0; cx.fillStyle = c;
-  cx.beginPath(); cx.arc(p[0], p[1], big ? 7 : 4, 0, 7); cx.fill();
-  cx.font = (big ? '800 13px' : '700 11.5px') + ' Inter'; cx.textAlign = 'center'; cx.fillStyle = '#dbe7f7';
-  cx.fillText(n.label || id, p[0], p[1] + r + 16);
-  cx.font = '500 10px "JetBrains Mono"'; cx.fillStyle = st === 'down' ? COL.down : '#7f93ad';
-  const sub = st === 'down' ? 'DOWN' : (n.latency ? n.latency + ' ms' : (id === 'server' ? `CPU ${Math.round((S.server || {}).cpu || 0)}%` : ''));
-  if (sub) cx.fillText(sub, p[0], p[1] + r + 29);
-  cx.restore();
-}
+// ---------- tooltip
+function ago(t) { if (!t) return 'never'; const s = Math.round((S.now || Date.now() / 1000) - t); return s < 60 ? s + ' s ago' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; }
+$('map').addEventListener('mousemove', e => {
+  const g = e.target.closest('.nd'), tip = $('tip');
+  if (!g) { tip.style.display = 'none'; return; }
+  const n = S.nodes[g.dataset.id] || {};
+  tip.innerHTML = `<b>${esc(n.label)}</b> <span class="chip ${n.status || 'none'}">${esc(n.status || '?')}</span>` +
+    `<div>${esc(n.detail || '')}</div>${n.host ? `<div class="mono">${esc(n.host)}</div>` : ''}<div>last answer: ${ago(n.last_ok)}</div>`;
+  tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 240, e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+});
+$('map').addEventListener('mouseleave', () => $('tip').style.display = 'none');
 
-function frame(t) {
-  cx.clearRect(0, 0, W, H);
-  // faint grid
-  cx.strokeStyle = 'rgba(80,130,220,.05)'; cx.lineWidth = 1;
-  for (let x = (t / 60) % 40; x < W; x += 40) { cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke(); }
-  for (let y = 0; y < H; y += 40) { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke(); }
-  // links
-  for (const l of S.links) {
-    const a = pos[l.a], b = pos[l.b]; if (!a || !b) continue;
-    const st = linkStatus(l.a, l.b), c = COL[st];
-    cx.save(); cx.strokeStyle = c; cx.lineWidth = st === 'down' ? 1.6 : 2; cx.globalAlpha = st === 'down' ? .75 : .35;
-    cx.shadowColor = c; cx.shadowBlur = st === 'down' ? 6 : 12;
-    if (st === 'down') cx.setLineDash([6, 7]);
-    cx.beginPath(); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.stroke(); cx.restore();
-  }
-  // particles
-  spawn();
-  parts = parts.filter(p => (p.t += p.v) < 1 && linkStatus(p.l.a, p.l.b) !== 'down');
-  for (const p of parts) {
-    const a = pos[p.l.a], b = pos[p.l.b]; if (!a || !b) continue;
-    const k = p.back ? 1 - p.t : p.t, x = a[0] + (b[0] - a[0]) * k, y = a[1] + (b[1] - a[1]) * k, c = COL[linkStatus(p.l.a, p.l.b)];
-    cx.save(); cx.fillStyle = c; cx.shadowColor = c; cx.shadowBlur = 16;
-    cx.beginPath(); cx.arc(x, y, 2.6, 0, 7); cx.fill();
-    cx.globalAlpha = .35; const kx = (p.back ? -1 : 1) * (b[0] - a[0]) * .025, ky = (p.back ? -1 : 1) * (b[1] - a[1]) * .025;
-    cx.beginPath(); cx.arc(x - kx, y - ky, 1.8, 0, 7); cx.fill(); cx.restore();
-  }
-  for (const [id, n] of Object.entries(S.nodes)) drawNode(id, n, t);
-  requestAnimationFrame(frame);
-}
-
-// tooltip on hover / tap
-function nodeAt(x, y) { let best = null, d0 = 34; for (const [id, p] of Object.entries(pos)) { const d = Math.hypot(p[0] - x, p[1] - y); if (d < d0 && S.nodes[id]) { d0 = d; best = id; } } return best; }
-function showTip(e) {
-  const r = cv.getBoundingClientRect(), x = (e.touches ? e.touches[0].clientX : e.clientX), y = (e.touches ? e.touches[0].clientY : e.clientY);
-  const id = nodeAt(x - r.left, y - r.top), tip = document.getElementById('tip');
-  if (!id) { tip.style.display = 'none'; return; }
-  const n = S.nodes[id], ago = n.last_ok ? Math.round(S.now - n.last_ok) : null;
-  tip.innerHTML = `<b>${n.label}</b> <span class="s" style="color:${COL[n.status]}">${n.status}</span>` +
-    `<div class="r">${n.detail || ''}</div>` + (n.host ? `<div class="r">${n.host}</div>` : '') +
-    `<div class="r">last answer: ${ago === null ? 'never' : ago < 60 ? ago + ' s ago' : Math.round(ago / 60) + ' min ago'}</div>`;
-  tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 230, x + 14) + 'px'; tip.style.top = (y + 14) + 'px';
-}
-cv.addEventListener('mousemove', showTip); cv.addEventListener('touchstart', showTip, {passive: true});
-cv.addEventListener('mouseleave', () => document.getElementById('tip').style.display = 'none');
-
-const bar = (pct) => `<div class="bar"><i class="${pct > 85 ? 'hot' : ''}" style="width:${Math.min(100, pct)}%"></i></div>`;
+// ---------- panels
+const bar = p => `<div class="bar"><i class="${p > 90 ? 'hot' : p > 75 ? 'warm' : ''}" style="width:${Math.max(2, Math.min(100, p))}%"></i></div>`;
+const chip = st => `<span class="chip ${st || 'none'}">${st === 'ok' ? 'OK' : st === 'slow' ? 'Slow' : st === 'down' ? 'Down' : '–'}</span>`;
 function panels() {
-  const s = S.server || {};
-  let h = `<h3>Server · ${s.host || ''}</h3>` +
-    `<div class="m"><span>CPU</span><span>${Math.round(s.cpu || 0)}%</span></div>${bar(s.cpu || 0)}` +
-    `<div class="m"><span>RAM</span><span>${s.ram_used_gb || 0} / ${s.ram_total_gb || 0} GB</span></div>${bar(s.ram_pct || 0)}`;
-  (s.disks || []).forEach(d => { h += `<div class="m"><span>Disk ${d.drive}</span><span>${d.free_gb} GB free</span></div>${bar(d.used_pct)}`; });
-  h += `<div class="m" style="color:#7f93ad"><span>Uptime</span><span>${s.uptime_h || 0} h</span></div>`;
-  document.getElementById('srv').innerHTML = h;
-  // forecast: simple trends from the last 24 h
+  const s = S.server || {}, ns = Object.values(S.nodes), cnt = k => ns.filter(n => n.status === k).length;
+  const ok = cnt('ok'), slow = cnt('slow'), down = cnt('down');
+  $('k-ok').textContent = ok; $('k-ok-s').textContent = `of ${ns.length} checks`;
+  $('k-slow').textContent = slow; $('k-down').textContent = down;
+  $('k-cpu').textContent = Math.round(s.cpu || 0) + '%'; $('k-host').textContent = s.host || '';
+  $('k-ram').textContent = Math.round(s.ram_pct || 0) + '%'; $('k-ram-s').textContent = `${s.ram_used_gb || 0} / ${s.ram_total_gb || 0} GB`;
+  const up = s.uptime_h || 0; $('k-up').textContent = up >= 48 ? Math.round(up / 24) + ' d' : up + ' h';
+  const st = $('state'); st.className = 'state' + (down ? ' bad' : slow ? ' warn' : '');
+  st.lastElementChild.textContent = down ? `${down} down` : slow ? `${slow} slow · rest OK` : 'All systems OK';
+
+  let h = `<h3>🖥️ Server <em>${esc(s.host || '')}</em></h3>` +
+    `<div class="m"><span>CPU</span><b>${Math.round(s.cpu || 0)}%</b></div>${bar(s.cpu || 0)}` +
+    `<div class="m"><span>RAM</span><b>${s.ram_used_gb || 0} / ${s.ram_total_gb || 0} GB</b></div>${bar(s.ram_pct || 0)}`;
+  (s.disks || []).forEach(d => { h += `<div class="m"><span>Disk ${esc(d.drive)}</span><b>${d.free_gb} GB free</b></div>${bar(d.used_pct)}`; });
+  $('srv').innerHTML = h;
+
   const pr = [];
-  (s.disks || []).forEach(d => { if (d.full_in_days !== null && d.full_in_days < 60) pr.push(`Disk <b>${d.drive}</b> full in about <b>${d.full_in_days} days</b>`); });
-  if (s.ram_trend_per_day && s.ram_trend_per_day > 5) pr.push(`RAM use rising <b>+${s.ram_trend_per_day.toFixed(1)}%/day</b>`);
-  Object.values(S.nodes).filter(n => n.kind === 'plant' && n.ping_trend && n.ping_trend > 40).forEach(n => pr.push(`${n.label}: replies getting slower <b>+${Math.round(n.ping_trend)} ms/day</b>`));
-  document.getElementById('pred').innerHTML = '<h3>Forecast</h3>' + (pr.length ? pr.map(x => `<div class="pred">${x}</div>`).join('') :
-    '<div class="pred" style="color:#7f93ad">No risk seen in the last 24 h.</div>');
-  const al = (S.alerts || []).slice(0, 12);
-  document.getElementById('alerts').innerHTML = '<h3>Alerts' + (S.telegram ? ' · Telegram on' : ' · Telegram not set') + '</h3>' +
-    (al.length ? al.map(a => `<div class="al">${a.text}<small>${new Date(a.t * 1000).toLocaleString('en-GB')}</small></div>`).join('') : '<div class="al" style="color:#7f93ad">No alerts.</div>');
-  const ns = Object.values(S.nodes), c = k => ns.filter(n => n.status === k).length;
-  document.getElementById('sum').innerHTML = `<b class="ok">${c('ok')} OK</b> · <b class="slow">${c('slow')} slow</b> · <b class="down">${c('down')} down</b>`;
+  (s.disks || []).forEach(d => { if (d.full_in_days !== null && d.full_in_days < 60) pr.push(`💽 Disk <b>${esc(d.drive)}</b> full in about <b>${d.full_in_days} days</b>`); });
+  if (s.ram_trend_per_day && s.ram_trend_per_day > 5) pr.push(`🧠 RAM use rising <b>+${s.ram_trend_per_day.toFixed(1)}% a day</b>`);
+  ns.filter(n => n.kind === 'plant' && n.ping_trend && n.ping_trend > 40).forEach(n => pr.push(`📶 ${esc(n.label)} replies getting slower <b>+${Math.round(n.ping_trend)} ms a day</b>`));
+  $('pred').innerHTML = '<h3>🔮 Forecast <em>last 24 h trend</em></h3>' + (pr.length ? pr.map(x => `<div class="pred">${x}</div>`).join('') : '<div class="empty">✅ No risk seen in the last 24 hours.</div>');
+
+  const pcs = Object.keys(S.nodes).filter(k => k.startsWith('pc_')).sort();
+  $('plants').innerHTML = pcs.map(k => {
+    const pc = S.nodes[k], db = S.nodes['db_' + k.slice(3)] || {};
+    const ping = (/ping (\d+) ms/.exec(pc.detail || '') || [])[1];
+    return `<tr><td><span class="pl">${esc(pc.label)}</span></td><td>${chip(pc.status)}<span class="s mono">${esc(pc.host || '')}</span></td>` +
+      `<td class="hide-s mono">${ping ? ping + ' ms' : '–'}</td><td>${chip(db.status)}<span class="s">${esc(db.detail || '')}</span></td>` +
+      `<td class="hide-s mono">${db.latency ? db.latency + ' ms' : '–'}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="empty">No plants yet.</td></tr>';
+
+  const svc = ['app', 'portal', 'internet', 'tailscale', 'hub', 'mail', 'manpower'].filter(k => S.nodes[k]);
+  $('svc').innerHTML = svc.map(k => { const n = S.nodes[k];
+    return `<div class="r"><span>${ICON[k] || '•'}</span><div class="t"><b>${esc(n.label)}</b><small>${esc(n.detail || '')}</small></div>${chip(n.status)}</div>`; }).join('');
+
+  $('tg').textContent = S.telegram ? '· sent to Telegram' : '· Telegram not set';
+  const al = (S.alerts || []).slice(0, 10);
+  $('alerts').innerHTML = al.length ? al.map(a => { const bad = /down|🔴|not|fail/i.test(a.text) && !/back|🟢/i.test(a.text);
+    return `<div class="ev${bad ? ' bad' : ''}"><i></i><div>${esc(a.text)}<small>${new Date(a.t * 1000).toLocaleString('en-GB', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'})}</small></div></div>`; }).join('')
+    : '<div class="empty">No alerts.</div>';
 }
 
-// Inside the NCM Hub this page is a snapshot sent by the server every 5 minutes (parent.D.monitor);
-// the live version (every 10 s) is on the server itself: http://192.168.1.128:8812 or http://100.73.12.26:8812
+// Inside the NCM Hub this page shows the snapshot the server sends every 5 minutes (parent HUB.monitor);
+// the live page (every 10 s) is on the server: http://192.168.1.128:8812 or http://100.73.12.26:8812
 async function getStatus() {
   try { const m = window.parent && window.parent !== window && window.parent.HUB && window.parent.HUB.monitor; if (m && m.nodes) return Object.assign({snapshot: true}, m); } catch (e) {}
   const r = await fetch('status.json', {cache: 'no-store'}); return r.json();
 }
 async function poll() {
   try {
-    const j = await getStatus();
-    if (j.snapshot) document.getElementById('clock').textContent = 'snapshot ' + new Date(j.now * 1000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-    const fresh = Object.keys(j.nodes).length !== Object.keys(S.nodes).length; S = j; if (fresh) layout(); panels();
-  } catch (e) { document.getElementById('sum').innerHTML = '<b class="down">monitor not answering</b>'; }
+    const j = await getStatus(); S = Object.assign({nodes: {}, links: [], server: {}, alerts: []}, j);
+    const t = new Date((S.now || Date.now() / 1000) * 1000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    $('sub').textContent = S.snapshot ? `Snapshot from ${t} · updates every 5 minutes · press ⚡ Live on the office network for real time`
+                                      : `Live · checked ${t} · every 10 seconds`;
+    $('mapnote').textContent = S.snapshot ? '· snapshot ' + t : '· live';
+    drawMap(); panels();
+  } catch (e) { $('sub').textContent = 'The monitor is not answering right now.'; }
 }
-setInterval(poll, 3000); poll();
-setInterval(() => { if (!S.snapshot) document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB'); }, 1000);
-document.getElementById('fs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
-resize(); requestAnimationFrame(frame);
+setInterval(poll, 5000); poll();
+$('fs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 </script>
 </body>
 </html>
