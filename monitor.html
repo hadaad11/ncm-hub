@@ -51,13 +51,14 @@ h3{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;c
 h3 em{font-style:normal;font-weight:600;color:var(--mut);text-transform:none;letter-spacing:0}
 /* map */
 #map{width:100%;height:auto;display:block}
-#map .lk{fill:none;stroke-width:2;stroke-linecap:round}
-#map .lk.ok{stroke:var(--ok);stroke-opacity:.55;stroke-dasharray:3 9;animation:flow 1.4s linear infinite}
-#map .lk.slow{stroke:var(--gold);stroke-opacity:.8;stroke-dasharray:3 9;animation:flow 3.2s linear infinite}
-#map .lk.down{stroke:var(--down);stroke-dasharray:7 6;stroke-opacity:.9}
-#map .lk.none{stroke:var(--none);stroke-opacity:.5}
-#map .base{fill:none;stroke:var(--line);stroke-width:5;stroke-linecap:round}
-@keyframes flow{to{stroke-dashoffset:-24}}
+#map .base{fill:none;stroke-width:9;stroke-linecap:round;stroke-opacity:.22}
+#map .base.ok{stroke:var(--ok)}#map .base.slow{stroke:var(--gold)}#map .base.down{stroke:var(--down);stroke-opacity:.18}#map .base.none{stroke:var(--none)}
+#map .lk{fill:none;stroke-width:4;stroke-linecap:round}
+#map .lk.ok{stroke:var(--ok);stroke-dasharray:10 12;animation:flow 1.1s linear infinite}
+#map .lk.slow{stroke:var(--gold);stroke-dasharray:10 12;animation:flow 2.6s linear infinite}
+#map .lk.down{stroke:var(--down);stroke-dasharray:12 8}
+#map .lk.none{stroke:var(--none)}
+@keyframes flow{to{stroke-dashoffset:-44}}
 #map .nd circle.face{fill:var(--card);stroke-width:2.5}
 #map .nd .ring{fill:none;stroke-width:2;opacity:.0;transform-box:fill-box;transform-origin:center}
 #map .nd.down .ring,#map .nd.slow .ring{animation:ring 1.8s ease-out infinite}
@@ -180,7 +181,7 @@ function drawMap() {
   const P = layout(S.nodes); let h = '';
   h += `<text class="colh" x="135" y="22">SERVICES</text><text class="colh" x="360" y="22">SERVER</text><text class="colh" x="555" y="22">PLANTS APP</text>` +
        `<text class="colh" x="740" y="22">PLANT PCs</text><text class="colh" x="915" y="22">DATABASES</text>`;
-  for (const l of S.links) { const a = P[l.a], b = P[l.b]; if (a && b) h += `<path class="base" d="${curve(a, b)}"/>`; }
+  for (const l of S.links) { const a = P[l.a], b = P[l.b]; if (a && b) h += `<path class="base ${linkSt(l.a, l.b)}" d="${curve(a, b)}"/>`; }
   for (const l of S.links) { const a = P[l.a], b = P[l.b]; if (a && b) h += `<path class="lk ${linkSt(l.a, l.b)}" d="${curve(a, b)}"/>`; }
   for (const [id, n] of Object.entries(S.nodes)) {
     const p = P[id]; if (!p) continue;
