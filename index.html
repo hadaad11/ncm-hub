@@ -176,6 +176,40 @@ iframe{border-radius:var(--radius);box-shadow:var(--shadow)}
 #app .nm-k b,#app .nc-k b,#app .np-k b{font-size:24px;font-weight:800;letter-spacing:-.6px}
 #app .nm-k span,#app .nc-k span,#app .np-k span{text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:10.5px}
 #app .card:has(> .nm),#app .card:has(> .nc),#app .card:has(> .np){padding:18px}
+/* ===== Glass look: colourful fixed backdrop, frosted see-through cards. Delete this block to go back. ===== */
+:root{--card:rgba(255,255,255,.6);--surface2:rgba(255,255,255,.32);--line:rgba(255,255,255,.6);--soft:rgba(255,255,255,.55);
+  --gblur:blur(18px) saturate(170%);--shadow:0 1px 1px rgba(255,255,255,.5) inset,0 10px 30px rgba(15,39,72,.12);--gbase:#b9cbe6}
+@media (prefers-color-scheme:dark){:root{--card:rgba(18,27,44,.55);--surface2:rgba(23,34,54,.45);--line:rgba(255,255,255,.10);--soft:rgba(255,255,255,.08);
+  --shadow:0 1px 1px rgba(255,255,255,.06) inset,0 10px 30px rgba(0,0,0,.35);--gbase:#0b1220}}
+html{background:var(--gbase)}body{background:transparent}
+body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;
+  background:radial-gradient(42% 50% at 12% 18%,rgba(36,88,154,.85),transparent 70%),
+    radial-gradient(38% 45% at 88% 12%,rgba(36,168,84,.65),transparent 70%),
+    radial-gradient(45% 50% at 75% 85%,rgba(0,108,168,.75),transparent 70%),
+    radial-gradient(36% 42% at 25% 90%,rgba(201,161,59,.55),transparent 70%),
+    linear-gradient(135deg,#b9cbe6 0%,#a9bfe0 50%,#b8d8c6 100%);
+  animation:gDrift 30s ease-in-out infinite alternate}
+@media (prefers-color-scheme:dark){body::before{opacity:.55;background-color:#0b1220}}
+@keyframes gDrift{to{transform:translate3d(-3%,2%,0) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){body::before{animation:none}}
+.layout,main{background:transparent}
+header{background:rgba(255,255,255,.55);-webkit-backdrop-filter:var(--gblur);backdrop-filter:var(--gblur);border-bottom:1px solid rgba(255,255,255,.5)}
+.topbar{background:rgba(255,255,255,.85)}
+.side{background:var(--card);-webkit-backdrop-filter:var(--gblur);backdrop-filter:var(--gblur);border-right:1px solid var(--line)}
+.hero{background:linear-gradient(120deg,rgba(36,88,154,.78),rgba(15,39,72,.82));-webkit-backdrop-filter:var(--gblur);backdrop-filter:var(--gblur)}
+.card,.tw,.bars,.tools,.srcbar,.links a,#lock form,
+#app .nm-k,#app .nc-k,#app .np-k{background:var(--card)!important;-webkit-backdrop-filter:var(--gblur);backdrop-filter:var(--gblur);border:1px solid var(--line);box-shadow:var(--shadow)}
+.grid .card{border-top:3px solid var(--brand2)}
+nav#tabs button:not(.on),.grid .card .l{color:var(--ink2)}
+.grid .card:hover,.links a:hover{background:rgba(255,255,255,.72)!important}
+th{background:rgba(15,39,72,.82)!important;color:#fff}
+td{border-bottom-color:rgba(15,39,72,.08)}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.22)}
+tr.clk:hover td,tbody tr:hover td{background:rgba(255,255,255,.6)}
+.tools select,.tools input,.fl input,#lock input[type=password]{background:rgba(255,255,255,.65);border-color:rgba(255,255,255,.8)}
+@media (prefers-color-scheme:dark){.grid .card:hover,.links a:hover{background:rgba(30,44,70,.7)!important}tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+  tr.clk:hover td,tbody tr:hover td{background:rgba(255,255,255,.08)}td{border-bottom-color:rgba(255,255,255,.06)}
+  header{background:rgba(11,18,32,.6)}.tools select,.tools input,.fl input,#lock input[type=password]{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}}
 </style>
 </head>
 <body>
