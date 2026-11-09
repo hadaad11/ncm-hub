@@ -322,7 +322,7 @@ async function open(pw, remember) {
 
 $('#lockForm').addEventListener('submit', e => { e.preventDefault(); open($('#pw').value, $('#remember').checked); });
 $('#logout').onclick = () => { store(KEY, null); location.reload(); };
-$('#reload').onclick = refresh;
+$('#reload').onclick = async () => { await refresh(); if ($('#maint').dataset.done) ncmMaint($('#maint')); };   // Maintenance is drawn once, so redraw it here
 async function refresh() { if (!PW) return; try { D = await fetchData(PW); render(); } catch (e) {} }
 setInterval(refresh, 5 * 60 * 1000);
 
