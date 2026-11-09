@@ -96,7 +96,7 @@
     const views = {summary: 'Summary', daily: 'Daily log', opening: 'Opening balance'};
     const show = k => {
       body.innerHTML = '<div class="nm-f" data-a="gv">' + Object.entries(views).map(([v, l]) => `<button class="nm-chip${v === k ? ' on' : ''}" data-v="${v}">${l}</button>`).join('') + '</div><div data-a="gb"></div>' +
-        '<div class="nm-foot">From "استهلاك الشحم.xlsm" on Google Drive · updated every 5 minutes</div>';
+        '<div class="nm-foot">From the "استهلاك الشحم" Google Sheet · updated every 5 minutes</div>';
       body.querySelectorAll('[data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
       const gb = body.querySelector('[data-a=gb]');
       if (k === 'daily') daily(gb, g); else gb.innerHTML = k === 'opening' ? opening(g) : summary(g);
